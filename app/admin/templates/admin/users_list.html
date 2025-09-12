@@ -3,11 +3,9 @@
 
 {% block content %}
 
-<h2 class="text-xl font-semibold mb-4">Usuários</h2>
-
 <!-- Toolbar -->
 <form method="get"
-      class="bg-white rounded-xl shadow ring-1 ring-slate-200 p-4 mb-4">
+    class="ring-1 ring-slate-200 p-4 mb-4">
   <div class="grid grid-cols-1 md:grid-cols-[minmax(240px,1fr)_220px_auto] gap-3 items-end">
     <div>
       <label class="block text-xs font-medium text-slate-600 mb-1">Busca</label>
@@ -47,8 +45,8 @@
 <div class="bg-white hidden md:block">
   <div class="overflow-x-auto">
     <table class="min-w-[880px] w-full border border-slate-200 rounded-lg overflow-hidden">
-      <thead class="bg-blue-700 text-white text-sm">
-        <tr>
+      <thead class="bg-blue-500 text-white text-sm">
+        <tr class="text-left">
           <th class="px-4 py-2 text-left">Nome</th>
           <th class="px-4 py-2 text-left">E-mail</th>
           <th class="px-4 py-2 text-left">Perfil</th>

@@ -12,14 +12,14 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body class="bg-slate-50 text-slate-800">
-
+  
   <!-- Header -->
   <header class="bg-white border-b sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
       <!-- Esquerda: Home + Título da página -->
       <div class="flex items-center gap-3 min-w-0">
         <a href="{{ url_for('index') }}" class="text-slate-700 hover:text-slate-900 text-xl shrink-0" title="Início">
-          <span class="text-slate-700 font-bold truncate">SGN · TGI</span>
+          <span class="text-slate-700 font-bold truncate">TGI · {{ (self.title()|striptags).split(' · ')[0] }}</span>
         </a>      
       </div>
 

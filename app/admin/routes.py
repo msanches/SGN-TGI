@@ -1,6 +1,7 @@
 from decimal import Decimal
 from io import StringIO, BytesIO
 from datetime import datetime
+from sqlalchemy.orm import joinedload
 
 from flask import (
     Blueprint, render_template, request, redirect, url_for,
@@ -85,12 +86,35 @@ def export_excel():
 @role_required("admin")
 def students_list():
     q = (request.args.get("q") or "").strip()
-    query = Student.query
+    campus_id = (request.args.get("campus") or "").strip()
+    off_id    = (request.args.get("off") or "").strip()
+
+    query = (Student.query
+             .options(joinedload(Student.campus), joinedload(Student.offering)))
+
     if q:
         like = f"%{q}%"
         query = query.filter(or_(Student.name.ilike(like), Student.rgm.ilike(like)))
-    students = query.order_by(Student.name.asc()).all()
-    return render_template("admin/students_list.html", students=students, q=q)
+
+    if campus_id.isdigit():
+        query = query.filter(Student.campus_id == int(campus_id))
+
+    if off_id.isdigit():
+        query = query.filter(Student.offering_id == int(off_id))
+
+    students  = query.order_by(Student.name.asc()).all()
+    campuses  = Campus.query.order_by(Campus.name.asc()).all()
+    offerings = Offering.query.order_by(Offering.code.asc()).all()
+
+    return render_template(
+        "admin/students_list.html",
+        students=students,
+        q=q,
+        campus_id=campus_id,
+        off_id=off_id,
+        campuses=campuses,
+        offerings=offerings,
+    )
 
 @admin_bp.route("/students/new", methods=["GET", "POST"])
 @login_required
@@ -186,13 +210,58 @@ def students_delete(student_id):
 @login_required
 @role_required("admin")
 def groups_list():
-    groups = Group.query.order_by(Group.id.asc()).all()
+    q = (request.args.get("q") or "").strip()
+    advisor = request.args.get("advisor", type=int)
+
+    # base de grupos; vamos permitir filtrar por aluno e por orientador
+    base = db.session.query(Group)
+
+    # filtro por orientador
+    if advisor:
+        base = base.filter(Group.orientador_user_id == advisor)
+
+    # filtro por aluno (nome ou RGM)
+    if q:
+        like = f"%{q}%"
+        base = (base.join(GroupStudent, GroupStudent.group_id == Group.id, isouter=True)
+                    .join(Student, Student.id == GroupStudent.student_id, isouter=True)
+                    .filter((Student.name.ilike(like)) | (Student.rgm.ilike(like))))
+
+    groups = base.order_by(Group.id.asc()).all()
+
+    # carrega membros em lote (evita N+1; members é dynamic => fazemos manual)
+    group_ids = [g.id for g in groups] or [0]
+    rows_members = (
+        db.session.query(GroupStudent.group_id, Student)
+        .join(Student, Student.id == GroupStudent.student_id)
+        .filter(GroupStudent.group_id.in_(group_ids))
+        .order_by(Student.name.asc())
+        .all()
+    )
+    members_map = {}
+    for gid, st in rows_members:
+        members_map.setdefault(gid, []).append(st)
+
     data = []
     for g in groups:
-        members = [gs.student for gs in g.members]
-        orientador = g.orientador.full_name if g.orientador else "—"
-        data.append({"g": g, "members": members, "orientador": orientador})
-    return render_template("admin/groups_list.html", groups=data)
+        orientador = g.orientador.full_name if g.orientador else None
+        data.append({"g": g, "members": members_map.get(g.id, []), "orientador": orientador})
+
+    # lista de orientadores para o select (ativos)
+    advisors = (
+        db.session.query(User.id, User.full_name)
+        .filter((User.role == "professor") & (User.is_active.is_(True)))
+        .order_by(User.full_name.asc())
+        .all()
+    )
+
+    return render_template(
+        "admin/groups_list.html",
+        groups=data,
+        q=q,
+        advisor=advisor,
+        advisors=advisors,
+    )
 
 @admin_bp.route("/groups/new", methods=["GET", "POST"])
 @login_required

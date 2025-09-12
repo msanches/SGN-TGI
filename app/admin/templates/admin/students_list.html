@@ -1,78 +1,136 @@
 {% extends "layout.html" %}
 {% block title %}Alunos · TGI{% endblock %}
+
 {% block content %}
 
-<div class="flex items-center justify-between gap-3 flex-wrap mb-6">
-  <h2 class="text-xl font-semibold text-slate-800">Alunos</h2>
+<form method="get" class="ring-1 ring-slate-200 p-4 mb-4">
+  <div class="grid gap-3 items-end
+              lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:grid-cols-2">
+
+    <!-- Busca -->
+    <div>
+      <label class="block text-sm text-slate-600 mb-1">Busca</label>
+      <input type="text" name="q" value="{{ q or '' }}" placeholder="Nome ou RGM"
+             class="w-full rounded-lg border border-slate-300 px-3 py-3 text-sm
+                    focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+    </div>
+
+    <!-- Campus -->
+    <div>
+      <label class="block text-sm text-slate-600 mb-1">Campus</label>
+      <select name="campus"
+              class="w-full rounded-lg border border-slate-300 px-3 py-3 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+        <option value="">Todos</option>
+        {% for c in campuses %}
+          <option value="{{ c.id }}" {{ 'selected' if campus_id|int == c.id else '' }}>
+            {{ c.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Oferta -->
+    <div>
+      <label class="block text-sm text-slate-600 mb-1">Oferta</label>
+      <select name="off"
+              class="w-full rounded-lg border border-slate-300 px-3 py-3 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+        <option value="">Todas</option>
+        {% for o in offerings %}
+          <option value="{{ o.id }}" {{ 'selected' if off_id|int == o.id else '' }}>
+            {{ o.code }}{% if o.description %} — {{ o.description }}{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Ações -->
+    {# ações à direita do formulário de filtros #}
+    <div class="flex flex-wrap justify-start sm:justify-end gap-2">
+      {# se houver filtros ativos (q/campus/oferta), mostra "Limpar"; senão, mostra "Buscar" #}
+      {% set has_filters = (q or campus_id or off_id) %}
+
+      {% if not has_filters %}
+    <button type="submit"
+            class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-medium text-white
+                   hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <span class="hidden sm:inline">Buscar</span>
+    </button>
+  {% else %}
+    <a href="{{ url_for('admin.students_list') }}"
+       class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm
+              hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2">
+      <i class="fa-solid fa-eraser"></i>
+      <span class="hidden sm:inline">Limpar</span>
+    </a>
+  {% endif %}
 
   <a href="{{ url_for('admin.students_new') }}"
-     class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
-    <i class="fa-solid fa-plus"></i>
-    <span>Novo aluno</span>
+     class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white
+            hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2">
+    <i class="fa-solid fa-user-plus"></i>
+    <span class="hidden sm:inline">Novo aluno</span>
   </a>
 </div>
 
-<form method="get" class="mb-4">
-  <div class="flex items-center gap-2">
-    <input type="text" name="q" value="{{ q or '' }}" placeholder="Buscar por nome ou RGM..."
-           class="w-full md:w-96 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-indigo-200">
-    <button type="submit"
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-slate-50">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <span>Buscar</span>
-    </button>
   </div>
-  {% if q %}
-    <p class="mt-2 text-xs text-slate-500">Filtro aplicado: <span class="font-medium">“{{ q }}”</span></p>
+
+  {% if q or campus_id or off_id %}
+    <p class="mt-2 text-xs text-slate-500">
+      Filtro:
+      {% if q %}<span class="font-medium">“{{ q }}”</span>{% endif %}
+      {% if campus_id %} · Campus {{ campuses|selectattr('id','equalto', campus_id|int)|map(attribute='name')|first }}{% endif %}
+      {% if off_id %} · Oferta {{ offerings|selectattr('id','equalto', off_id|int)|map(attribute='code')|first }}{% endif %}
+    </p>
   {% endif %}
 </form>
 
-<div class="overflow-x-auto bg-white rounded-xl border shadow-sm">
+<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
   <table class="min-w-full text-sm">
-    <thead class="bg-slate-50 text-slate-600">
-      <tr>
-        <th class="text-left font-semibold px-4 py-3">Nome</th>
-        <th class="text-left font-semibold px-4 py-3">RGM</th>
-        <th class="text-left font-semibold px-4 py-3">Campus</th>
-        <th class="text-left font-semibold px-4 py-3">Oferta</th>
-        <th class="text-left font-semibold px-4 py-3">Ações</th>
+    <thead class="bg-blue-500 text-white text-sm">
+      <tr class="text-left">
+        <th class="px-4 py-2 text-left font-semibold">Nome</th>
+        <th class="px-4 py-2 text-left font-semibold">RGM</th>
+        <th class="px-4 py-2 text-left font-semibold">Campus</th>
+        <th class="px-4 py-2 text-left font-semibold">Oferta</th>
+        <th class="px-4 py-2 text-left font-semibold">Ações</th>
       </tr>
     </thead>
     <tbody class="divide-y">
       {% for s in students %}
-        <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3 text-slate-800">{{ s.name }}</td>
-          <td class="px-4 py-3 font-mono">{{ s.rgm }}</td>
-          <td class="px-4 py-3">{{ s.campus.name if s.campus else '-' }}</td>
-          <td class="px-4 py-3">{{ s.offering.code if s.offering else '-' }}</td>
-          <td class="px-4 py-3 whitespace-nowrap">
-            <a href="{{ url_for('admin.students_edit', student_id=s.id) }}"
-               class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border hover:bg-slate-50 mr-2">
-              <i class="fa-solid fa-pen-to-square"></i>
-              <span>Editar</span>
-            </a>
-
-            <form action="{{ url_for('admin.students_delete', student_id=s.id) }}"
-                  method="post" class="inline"
-                  onsubmit="return confirm('Excluir este aluno?');">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit"
-                      class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-rose-600 hover:bg-rose-50">
-                <i class="fa-solid fa-trash"></i>
-                <span>Excluir</span>
-              </button>
-            </form>
-          </td>
-        </tr>
+      <tr class="hover:bg-slate-50">
+        <td class="px-4 py-2 text-slate-800">{{ s.name }}</td>
+        <td class="px-4 py-2 font-mono">{{ s.rgm }}</td>
+        <td class="px-4 py-2">{{ s.campus.name if s.campus else '-' }}</td>
+        <td class="px-4 py-2">{{ s.offering.code if s.offering else '-' }}</td>
+        <td class="px-4 py-2 whitespace-nowrap">
+          <a href="{{ url_for('admin.students_edit', student_id=s.id) }}"
+             class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm
+                    hover:bg-slate-50 mr-2">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span>Editar</span>
+          </a>
+          <form action="{{ url_for('admin.students_delete', student_id=s.id) }}"
+                method="post" class="inline"
+                onsubmit="return confirm('Excluir este aluno?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit"
+                    class="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-sm
+                           text-rose-600 hover:bg-rose-50">
+              <i class="fa-solid fa-trash"></i>
+              <span>Excluir</span>
+            </button>
+          </form>
+        </td>
+      </tr>
       {% else %}
-        <tr>
-          <td colspan="5" class="px-4 py-6 text-center text-slate-500">
-            Nenhum aluno encontrado.
-          </td>
-        </tr>
+      <tr>
+        <td colspan="5" class="px-4 py-6 text-center text-slate-500">Nenhum aluno encontrado.</td>
+      </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
-
 {% endblock %}

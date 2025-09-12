@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, url_for, request
 from .config import Config
 from .extensions import db, migrate, login_manager, csrf, bcrypt
 from .auth import auth_bp
@@ -59,5 +59,26 @@ def create_app() -> Flask:
         elif role == 'professor':
             return redirect(url_for('professors.dashboard'))
         return redirect(url_for('guests.banner'))
+
+    @app.context_processor
+    def inject_page_label():
+        labels = {
+            # ADMIN
+            "admin.users_list": "Usuários",
+            "admin.user_form": "Usuários",
+            "admin.groups_list": "Grupos",
+            "admin.groups_edit": "Grupos",
+            "admin.groups_new":  "Grupos",
+            # PROFESSOR
+            "professors.dashboard": "Dashboard",
+            "professors.groups_list": "Meus grupos",
+            "professors.offerings_list": "Minhas ofertas",
+            "professors.offering_detail": "Oferta",
+            # CONVIDADO
+            "guests.dashboard": "Dashboard",
+            "guests.poster_eval": "Avaliar pôster",
+            "guests.my_reviews": "Minhas avaliações",
+        }
+        return {"page_label": labels.get(request.endpoint)}
 
     return app
