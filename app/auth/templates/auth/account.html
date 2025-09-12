@@ -1,0 +1,122 @@
+{% extends "layout.html" %}
+{% block title %}Minha conta{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <h2 class="text-xl font-semibold text-slate-800 mb-4">Minha conta</h2>
+
+  <div class="bg-white shadow rounded-xl p-6 sm:p-8 border border-slate-200">
+    <form method="post" novalidate class="space-y-6">
+      {{ form.hidden_tag() }}
+
+      {# --- Nome completo --- #}
+      <div>
+        <label for="full_name" class="block text-sm font-medium text-slate-700 mb-1">
+          {{ form.full_name.label.text }}
+        </label>
+        {{ form.full_name(
+            id="full_name",
+            class_="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+        ) }}
+        {% if form.full_name.errors %}
+          <ul class="mt-1 text-sm text-rose-600 space-y-0.5">
+            {% for e in form.full_name.errors %}<li>{{ e }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      {# --- Email --- #}
+      <div>
+        <label for="email" class="block text-sm font-medium text-slate-700 mb-1">
+          {{ form.email.label.text }}
+        </label>
+        {{ form.email(
+            id="email",
+            class_="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
+            autocomplete="email",
+            placeholder="voce@exemplo.com"
+        ) }}
+        {% if form.email.errors %}
+          <ul class="mt-1 text-sm text-rose-600 space-y-0.5">
+            {% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      {# --- Trocar senha (opcional) --- #}
+      <div class="border border-slate-200 rounded-lg p-4 sm:p-5">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="fa-solid fa-key text-slate-500"></i>
+          <h3 class="text-sm font-semibold text-slate-700">Trocar senha (opcional)</h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label for="current_password" class="block text-sm font-medium text-slate-700 mb-1">
+              {{ form.current_password.label.text }}
+            </label>
+            {{ form.current_password(
+                id="current_password",
+                class_="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
+                autocomplete="current-password",
+                placeholder="Senha atual"
+            ) }}
+            {% if form.current_password.errors %}
+              <ul class="mt-1 text-sm text-rose-600 space-y-0.5">
+                {% for e in form.current_password.errors %}<li>{{ e }}</li>{% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+
+          <div>
+            <label for="new_password" class="block text-sm font-medium text-slate-700 mb-1">
+              {{ form.new_password.label.text }}
+            </label>
+            {{ form.new_password(
+                id="new_password",
+                class_="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
+                autocomplete="new-password",
+                placeholder="Nova senha"
+            ) }}
+            {% if form.new_password.errors %}
+              <ul class="mt-1 text-sm text-rose-600 space-y-0.5">
+                {% for e in form.new_password.errors %}<li>{{ e }}</li>{% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+
+          <div>
+            <label for="confirm_new_password" class="block text-sm font-medium text-slate-700 mb-1">
+              {{ form.confirm_new_password.label.text }}
+            </label>
+            {{ form.confirm_new_password(
+                id="confirm_new_password",
+                class_="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
+                autocomplete="new-password",
+                placeholder="Confirmar nova senha"
+            ) }}
+            {% if form.confirm_new_password.errors %}
+              <ul class="mt-1 text-sm text-rose-600 space-y-0.5">
+                {% for e in form.confirm_new_password.errors %}<li>{{ e }}</li>{% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-500 mt-3">Deixe os campos de senha em branco para manter a senha atual.</p>
+      </div>
+
+      {# --- Ações --- #}
+      <div class="flex items-center justify-end gap-3">
+        <a href="{{ url_for('index') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Cancelar</span>
+        </a>
+        {{ form.submit(
+            class_="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white font-medium px-5 py-2.5 rounded-lg transition-colors"
+        ) }}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

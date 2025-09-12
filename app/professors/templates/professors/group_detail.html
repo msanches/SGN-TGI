@@ -1,0 +1,106 @@
+{% extends "layout.html" %}
+{% import "_components.html" as ui %}
+{% block title %}Grupo #{{ group.id }} · TGI{% endblock %}
+
+{% block content %}
+<div class="mb-4 flex items-start justify-between">
+  <div>
+    <h1 class="text-xl font-semibold text-slate-800">
+      Grupo #{{ group.id }}
+    </h1>
+    <p class="text-slate-600">
+      {{ group.title or 'Sem título' }}
+    </p>
+    {% if group.orientador %}
+      <p class="mt-1 text-sm text-slate-500">
+        Orientador: <span class="font-medium text-slate-700">{{ group.orientador.full_name }}</span>
+      </p>
+    {% endif %}
+  </div>
+
+  <div class="flex gap-2">
+    {{ ui.btn("Meus grupos", href=url_for('professors.groups_list'),
+              variant='secondary', icon='fa-solid fa-arrow-left') }}
+    {{ ui.btn("Editar notas", href=url_for('professors.group_grades_edit', group_id=group.id),
+              icon='fa-solid fa-pen-to-square') }}
+  </div>
+</div>
+
+<div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+  <!-- Alunos -->
+  <section class="rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-3">
+      <i class="fa-solid fa-user-graduate text-slate-600"></i>
+      <h2 class="text-sm font-medium text-slate-800">Alunos</h2>
+      {% if students %} {{ ui.badge(students|length ~ " aluno(s)", "slate") }} {% endif %}
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 text-slate-600">
+          <tr>
+            <th class="px-3 py-2 text-left font-semibold">RGM</th>
+            <th class="px-3 py-2 text-left font-semibold">Nome</th>
+            <th class="px-3 py-2 text-left font-semibold">Campus</th>
+            <th class="px-3 py-2 text-left font-semibold">Oferta</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for s in students %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-3 py-2">{{ s.rgm }}</td>
+              <td class="px-3 py-2">{{ s.name }}</td>
+              <td class="px-3 py-2">{{ s.campus.name if s.campus else '-' }}</td>
+              <td class="px-3 py-2">{{ s.offering.code if s.offering else '-' }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td class="px-3 py-6 text-center text-slate-500" colspan="4">
+                Nenhum aluno neste grupo.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Notas -->
+  <section class="rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-3">
+      <i class="fa-solid fa-clipboard-check text-slate-600"></i>
+      <h2 class="text-sm font-medium text-slate-800">Notas</h2>
+    </div>
+
+    <div class="p-5 space-y-3">
+      {% if ga %}
+        <div class="flex items-center justify-between">
+          <span class="text-slate-600">Relatório I</span>
+          <span class="font-medium text-slate-800">
+            {{ '%.2f'|format(ri.score) if ri and ri.score is not none else '-' }}
+          </span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-600">Relatório II</span>
+          <span class="font-medium text-slate-800">
+            {{ '%.2f'|format(rii.score) if rii and rii.score is not none else '-' }}
+          </span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-600">Paper</span>
+          <span class="font-medium text-slate-800">
+            {{ '%.2f'|format(paper.score) if paper and paper.score is not none else '-' }}
+          </span>
+        </div>
+      {% else %}
+        <p class="text-slate-600">Sem notas lançadas.</p>
+      {% endif %}
+
+      <p class="pt-2 text-xs text-slate-500">
+        <i class="fa-regular fa-circle-question"></i>
+        A nota de <strong>Banner</strong> é a média das avaliações individuais e é mostrada nos relatórios/exportações.
+      </p>
+    </div>
+  </section>
+</div>
+{% endblock %}

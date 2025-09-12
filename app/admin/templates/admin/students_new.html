@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+{% block title %}Cadastrar aluno · TGI{% endblock %}
+{% block content %}
+
+<div class="max-w-6xl">
+  <div class="bg-white rounded-xl border shadow-sm">
+    <div class="px-5 py-4 border-b">
+      <h2 class="text-xl font-semibold text-slate-800">Novo Aluno</h2>
+      <p class="mt-1 text-sm text-slate-500">Preencha os dados abaixo. O RGM deve ser único.</p>
+    </div>
+
+    <form method="post" novalidate class="p-5 space-y-5">
+      {{ form.csrf_token }}
+
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">{{ form.name.label }}</label>
+        {{ form.name(class_="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-indigo-200",
+                     placeholder="Nome completo", autocomplete="name") }}
+        {% for e in form.name.errors %}<div class="mt-1 text-sm text-rose-600">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ form.rgm.label }}</label>
+          {{ form.rgm(class_="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-indigo-200",
+                      placeholder="Ex.: 1234567", autocomplete="off") }}
+          {% for e in form.rgm.errors %}<div class="mt-1 text-sm text-rose-600">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ form.campus_id.label }}</label>
+          {{ form.campus_id(class_="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-indigo-200") }}
+          {% for e in form.campus_id.errors %}<div class="mt-1 text-sm text-rose-600">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">{{ form.offering.label }}</label>
+        {{ form.offering(class_="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-indigo-200",
+                         placeholder="Ex.: 2025-2-A") }}
+        {% for e in form.offering.errors %}<div class="mt-1 text-sm text-rose-600">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="pt-2 flex items-center gap-3">
+        {{ form.submit(class_="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700") }}
+        <a href="{{ url_for('admin.students_list') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-slate-50">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

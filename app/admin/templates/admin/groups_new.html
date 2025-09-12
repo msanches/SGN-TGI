@@ -1,0 +1,205 @@
+{% extends "layout.html" %}
+{% block title %}Criar Grupo · TGI{% endblock %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-6 gap-3 flex-wrap">
+  <h2 class="text-xl font-semibold text-slate-800">Criar Grupo</h2>
+  <a href="{{ url_for('admin.groups_list') }}"
+     class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border hover:bg-slate-50 text-sm">
+    <i class="fa-solid fa-arrow-left"></i>
+    <span>Voltar</span>
+  </a>
+</div>
+
+<form method="post" id="groupForm" novalidate class="space-y-6">
+  {{ form.hidden_tag() }}
+
+  <!-- Card: Dados do projeto -->
+  <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
+    <div>
+      <label class="block text-sm font-medium text-slate-700 mb-1">
+        {{ form.title.label.text }}
+      </label>
+      {{ form.title(
+          placeholder="Ex.: Sistema de Gestão Acadêmica para TGI",
+          class_="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-indigo-200"
+      ) }}
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-slate-700 mb-1">
+        {{ form.orientador_user_id.label.text }}
+      </label>
+      {{ form.orientador_user_id(
+          class_="w-full md:w-[420px] rounded-lg border px-3 py-2 text-sm bg-white focus:outline-none focus:ring focus:ring-indigo-200"
+      ) }}
+      <p class="mt-1 text-xs text-slate-500">Opcional. Você pode definir/alterar depois.</p>
+    </div>
+  </div>
+
+  <!-- Card: Adicionar alunos -->
+  <div class="bg-white rounded-xl shadow-sm border p-5">
+    <div class="mb-3">
+      <label for="rgmInput" class="block text-sm font-medium text-slate-700 mb-1">
+        Adicionar aluno por RGM
+      </label>
+      <div class="flex items-stretch gap-2">
+        <input id="rgmInput" type="text" inputmode="numeric" autocomplete="off"
+               class="flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-indigo-200"
+               placeholder="Digite o RGM" />
+        <button type="button" id="addRgmBtn"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+          <i class="fa-solid fa-plus"></i>
+          <span>Adicionar</span>
+        </button>
+      </div>
+      <p class="mt-1 text-xs text-slate-500">Ao adicionar, validamos e mostramos nome / campus / oferta.</p>
+    </div>
+
+    <!-- Tabela de RGMs -->
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 text-slate-600">
+          <tr>
+            <th class="text-left font-semibold px-3 py-2 border-b">RGM</th>
+            <th class="text-left font-semibold px-3 py-2 border-b">Nome</th>
+            <th class="text-left font-semibold px-3 py-2 border-b">Campus</th>
+            <th class="text-left font-semibold px-3 py-2 border-b">Oferta</th>
+            <th class="text-left font-semibold px-3 py-2 border-b">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="rgmTbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Total de alunos -->
+    <div class="mt-3 text-xs text-slate-500">
+      <span id="rgmCount">0</span> aluno(s) no grupo.
+    </div>
+  </div>
+
+  <!-- Campo escondido com os RGMs (um por linha) -->
+  {{ form.rgms(id="rgmsHidden", style="display:none;") }}
+
+  <!-- Ações -->
+  <div class="flex items-center gap-3">
+    <button type="submit"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+      <i class="fa-solid fa-floppy-disk"></i>
+      <span>Salvar grupo</span>
+    </button>
+    <a href="{{ url_for('admin.groups_list') }}"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-slate-50">
+      <i class="fa-solid fa-xmark"></i>
+      <span>Cancelar</span>
+    </a>
+  </div>
+</form>
+
+<script>
+(() => {
+  const input     = document.getElementById('rgmInput');
+  const addBtn    = document.getElementById('addRgmBtn');
+  const tbody     = document.getElementById('rgmTbody');
+  const hidden    = document.getElementById('rgmsHidden');
+  const countEl   = document.getElementById('rgmCount');
+  const apiUrl    = "{{ url_for('admin.api_student_by_rgm') }}";
+
+  const rgmSet = new Set();
+
+  function refreshHidden() {
+    hidden.value = Array.from(rgmSet).join('\n');
+    countEl.textContent = rgmSet.size;
+  }
+
+  function td(text) {
+    const cell = document.createElement('td');
+    cell.className = "px-3 py-2 border-b";
+    cell.textContent = text;
+    return cell;
+  }
+
+  function addRow(st) {
+    if (rgmSet.has(st.rgm)) return;
+    rgmSet.add(st.rgm);
+    refreshHidden();
+
+    const tr = document.createElement('tr');
+    tr.dataset.rgm = st.rgm;
+    tr.className = "hover:bg-slate-50";
+
+    tr.appendChild(td(st.rgm || "-"));
+    tr.appendChild(td(st.name || "-"));
+    tr.appendChild(td(st.campus || "-"));
+    tr.appendChild(td(st.offering || "-"));
+
+    const actions = document.createElement('td');
+    actions.className = "px-3 py-2 border-b";
+    const rm = document.createElement('button');
+    rm.type = "button";
+    rm.className = "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border hover:bg-slate-50";
+    rm.innerHTML = '<i class="fa-solid fa-trash-can"></i><span>Remover</span>';
+    rm.addEventListener('click', () => {
+      rgmSet.delete(st.rgm);
+      tr.remove();
+      refreshHidden();
+    });
+    actions.appendChild(rm);
+    tr.appendChild(actions);
+
+    tbody.appendChild(tr);
+  }
+
+  async function addByRgm() {
+    const rgm = (input.value || "").trim();
+    if (!rgm) return;
+
+    if (rgmSet.has(rgm)) {
+      alert('RGM já incluído.');
+      input.value = '';
+      input.focus();
+      return;
+    }
+
+    try {
+      const resp = await fetch(apiUrl + '?rgm=' + encodeURIComponent(rgm));
+      const data = await resp.json();
+
+      if (!data.ok || !data.found) {
+        alert('RGM não encontrado.');
+        return;
+      }
+      // Bloqueia alunos já vinculados a outro grupo
+      if (data.student && data.student.in_group) {
+        alert(`Aluno já pertence ao grupo #${data.student.group_id}.`);
+        return;
+      }
+
+      addRow(data.student);
+      input.value = '';
+      input.focus();
+    } catch (err) {
+      console.error(err);
+      alert('Falha ao validar RGM. Tente novamente.');
+    }
+  }
+
+  addBtn.addEventListener('click', addByRgm);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addByRgm();
+    }
+  });
+
+  // Evita submit sem alunos
+  document.getElementById('groupForm').addEventListener('submit', (e) => {
+    if (rgmSet.size === 0) {
+      e.preventDefault();
+      alert('Inclua pelo menos um RGM.');
+    }
+  });
+})();
+</script>
+
+{% endblock %}

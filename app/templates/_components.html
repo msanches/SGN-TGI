@@ -1,0 +1,114 @@
+{# Badges -------------------------------------------------------------- #}
+{% macro badge(text, tone='slate') -%}
+  {% set base = "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ring-1" %}
+  {% if tone == 'indigo' %}{% set cls = "bg-indigo-50 text-indigo-700 ring-indigo-200" %}
+  {% elif tone == 'emerald' %}{% set cls = "bg-emerald-50 text-emerald-700 ring-emerald-200" %}
+  {% elif tone == 'amber' %}{% set cls = "bg-amber-50 text-amber-800 ring-amber-200" %}
+  {% elif tone == 'rose' %}{% set cls = "bg-rose-50 text-rose-700 ring-rose-200" %}
+  {% else %}{% set cls = "bg-slate-100 text-slate-700 ring-slate-300" %}{% endif %}
+  <span class="{{ base }} {{ cls }}">{{ text }}</span>
+{%- endmacro %}
+
+{# Alerts (flash) ------------------------------------------------------ #}
+{% macro alert(message, category='info') -%}
+  {% if category in ['success'] %}
+    {% set cls = "bg-emerald-50 text-emerald-700 border border-emerald-200" %}
+    {% set icon = "fa-solid fa-circle-check" %}
+  {% elif category in ['warning'] %}
+    {% set cls = "bg-amber-50 text-amber-800 border border-amber-200" %}
+    {% set icon = "fa-solid fa-triangle-exclamation" %}
+  {% elif category in ['danger','error'] %}
+    {% set cls = "bg-rose-50 text-rose-700 border border-rose-200" %}
+    {% set icon = "fa-solid fa-circle-exclamation" %}
+  {% else %}
+    {% set cls = "bg-slate-50 text-slate-700 border border-slate-200" %}
+    {% set icon = "fa-regular fa-circle-info" %}
+  {% endif %}
+  <div class="rounded-md px-3 py-2 text-sm flex items-start gap-2 {{ cls }}">
+    <i class="{{ icon }} mt-0.5"></i>
+    <div class="min-w-0">{{ message }}</div>
+  </div>
+{%- endmacro %}
+
+{# Campo de busca ------------------------------------------------------ #}
+{% macro searchbar(name='q', value='', placeholder='Buscar...') -%}
+  <div class="relative w-full sm:w-80">
+    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+    <input
+      type="text" name="{{ name }}" value="{{ value|e }}" placeholder="{{ placeholder }}"
+      class="w-full pl-10 pr-3 py-2 rounded-md border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white"
+    >
+  </div>
+{%- endmacro %}
+
+{# Barra de botões ----------------------------------------------------- #}
+{% macro btnbar(items=[], align='start') -%}
+  {% set align_map = {'start':'justify-start','center':'justify-center','end':'justify-end','between':'justify-between'} %}
+  <div class="flex flex-wrap gap-2 {{ align_map.get(align,'justify-start') }}">
+    {% for it in items %}{{ it|safe }}{% endfor %}
+  </div>
+{%- endmacro %}
+
+{# Botão versátil ------------------------------------------------------ #}
+{% macro btn(label, href=None, icon=None, variant='primary', size='md',
+             method='get', as_button=False, form_id=None, extra_classes='',
+             type_='button', name=None, value=None, id_=None, title=None) %}
+
+  {% set base = "inline-flex items-center gap-2 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition" %}
+  {% set size_class = {
+    'xs': 'px-2 py-1 text-xs',
+    'sm': 'px-3 py-1.5 text-sm',
+    'md': 'px-4 py-2 text-sm',
+    'lg': 'px-5 py-2.5 text-base'
+  }[size] if size in ['xs','sm','md','lg'] else 'px-4 py-2 text-sm' %}
+
+  {% set var_class = {
+    'primary':  'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-400',
+    'secondary':'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 focus:ring-slate-400',
+    'danger':   'bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-400',
+    'ghost':    'text-slate-700 hover:bg-slate-100 focus:ring-slate-300'
+  }[variant] if variant in ['primary','secondary','danger','ghost'] else 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-400' %}
+
+  {% set classes = base ~ ' ' ~ size_class ~ ' ' ~ var_class ~ ((' ' ~ extra_classes) if extra_classes else '') %}
+
+  {# POST com form embutido #}
+  {% if method|lower == 'post' and not as_button %}
+    <form method="post" action="{{ href or '#' }}" class="inline" {% if form_id %}id="{{ form_id }}"{% endif %}>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="{{ classes }}"
+              {% if name %}name="{{ name }}"{% endif %}
+              {% if value is not none %}value="{{ value }}"{% endif %}
+              {% if id_ %}id="{{ id_ }}"{% endif %}
+              {% if title %}title="{{ title }}"{% endif %}>
+        {% if icon %}<i class="{{ icon }}"></i>{% endif %}
+        {{ label }}
+      </button>
+    </form>
+
+  {# Botão puro #}
+  {% elif as_button %}
+    <button type="{{ type_ }}" class="{{ classes }}"
+            {% if name %}name="{{ name }}"{% endif %}
+            {% if value is not none %}value="{{ value }}"{% endif %}
+            {% if id_ %}id="{{ id_ }}"{% endif %}
+            {% if title %}title="{{ title }}"{% endif %}>
+      {% if icon %}<i class="{{ icon }}"></i>{% endif %}
+      {{ label }}
+    </button>
+
+  {# Link #}
+  {% else %}
+    <a href="{{ href or '#' }}" class="{{ classes }}"
+       {% if id_ %}id="{{ id_ }}"{% endif %}
+       {% if title %}title="{{ title }}"{% endif %}>
+      {% if icon %}<i class="{{ icon }}"></i>{% endif %}
+      {{ label }}
+    </a>
+  {% endif %}
+{% endmacro %}
+
+{# Submit que preserva name/value (WTForms) ---------------------------- #}
+{% macro submit(label='Salvar', icon='fa-solid fa-floppy-disk', variant='primary', size='md', name=None, value='1', extra_classes='') -%}
+  {{ btn(label, href=None, icon=icon, variant=variant, size=size, extra_classes=extra_classes,
+         type_='submit', name=name, value=value, as_button=True) }}
+{%- endmacro %}

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}TGI{% endblock %}</title>
+  <!-- Tailwind Play CDN (rápido para dev). Para produção, vale gerar build estático. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome (seus ícones) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- Seu CSS (opcional). Deixe por último se quiser sobrescrever algo do Tailwind. -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+  <!-- Header -->
+  <header class="bg-white border-b sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
+      <!-- Esquerda: Home + Título da página -->
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="{{ url_for('index') }}" class="text-slate-700 hover:text-slate-900 text-xl shrink-0" title="Início">
+          <i class="fa-solid fa-house"></i>
+        </a>
+        <span class="text-slate-700 font-semibold truncate">
+          {{ self.title()|striptags }}
+        </span>
+      </div>
+
+      {% if current_user.is_authenticated %}
+      <!-- Direita: Navegação dependente do perfil + conta/sair -->
+      <nav class="flex items-center gap-2 sm:gap-4">
+        {% if current_user.role_value == 'admin' %}
+          
+          <a href="{{ url_for('admin.students_list') }}" class="text-sm text-slate-600 hover:text-slate-900"><i class="fa-solid fa-graduation-cap"></i> Alunos</a>
+          <a href="{{ url_for('admin.groups_list') }}" class="text-sm text-slate-600 hover:text-slate-900"><i class="fa-solid fa-user-group"></i> Grupos</a>
+        {% elif current_user.role_value == 'professor' %}
+          
+          <a href="{{ url_for('professors.groups_list') }}" class="text-sm text-slate-600 hover:text-slate-900"><i class="fa-solid fa-user-group"></i> Meus Grupos</a>
+          <a href="{{ url_for('professors.offerings_list') }}" class="text-sm text-slate-600 hover:text-slate-900"><i class="fa-solid fa-list-check text-xl text-slate-700"></i> Minhas Ofertas</a>
+        {% else %}
+          <a href="{{ url_for('guests.banner') }}" class="text-sm text-slate-600 hover:text-slate-900">Convidado</a>
+        {% endif %}
+        
+        <span class="text-sm text-slate-500 md:inline">Olá, {{ current_user.full_name }}</span>
+
+        <a href="{{ url_for('auth.account') }}" class="p-2 rounded hover:bg-slate-100" title="Minha conta">
+          <i class="fa-solid fa-gear"></i>
+        </a>
+
+        <form action="{{ url_for('auth.logout') }}" method="post" class="inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="p-2 rounded hover:bg-rose-50 text-rose-600" title="Sair">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          </button>
+        </form>
+      </nav>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- Conteúdo -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-2 mb-4">
+          {% for category, message in messages %}
+            <div class="rounded-md px-3 py-2 text-sm border
+              {% if category == 'success' %} bg-emerald-50 text-emerald-700 border-emerald-200
+              {% elif category == 'warning' %} bg-amber-50 text-amber-800 border-amber-200
+              {% elif category == 'danger' or category == 'error' %} bg-rose-50 text-rose-700 border-rose-200
+              {% else %} bg-slate-50 text-slate-700 border-slate-200 {% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Modal global (IDs preservados para seu JS) -->
+  <div id="modal-backdrop" class="fixed inset-0 bg-black/50 hidden"></div>
+  <div id="modal" class="fixed inset-0 grid place-items-center hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="bg-white rounded-xl shadow-xl max-w-4xl w-[92vw] max-h-[85vh] overflow-auto p-5 relative">
+      <button type="button" class="modal-close absolute top-2 right-3 text-2xl leading-none text-slate-500 hover:text-slate-700" aria-label="Fechar"><i class="fa-solid fa-circle-xmark"></i></button>
+      <div id="modal-body" class="p-5 sm:p-6 lg:p-8"></div>
+    </div>
+  </div>
+
+  <!-- Seu JS (com cache-bust para garantir atualização) -->
+  <script src="{{ url_for('static', filename='js/script.js') }}?v=20250815"></script>
+</body>
+</html>

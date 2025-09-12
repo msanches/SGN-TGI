@@ -1,0 +1,119 @@
+{% extends "layout.html" %}
+{% import "_components.html" as ui %}
+{% block title %}Oferta {{ off.code }} · TGI{% endblock %}
+
+{% block content %}
+<div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+  <div>
+    <h1 class="text-xl font-semibold text-slate-800">
+      Oferta {{ off.code }}
+    </h1>
+    <p class="text-slate-600">{{ off.description or 'Sem descrição' }}</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {{ ui.btn("Voltar", href=url_for('professors.offerings_list'), variant='secondary', icon='fa-solid fa-arrow-left') }}
+    {{ ui.btn("CSV", href=url_for('professors.export_offering_csv', offering_id=off.id),
+              variant='secondary', icon='fa-solid fa-file-csv') }}
+    {{ ui.btn("Excel", href=url_for('professors.export_offering_xlsx', offering_id=off.id),
+              variant='secondary', icon='fa-solid fa-file-excel') }}
+  </div>
+</div>
+
+<section class="rounded-xl border border-slate-200 bg-white shadow-sm">
+  <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-3">
+    <i class="fa-solid fa-users-line text-slate-600"></i>
+    <h2 class="text-sm font-medium text-slate-800">Alunos desta oferta</h2>
+    {{ ui.badge(total ~ " aluno(s)", "slate") }}
+  </div>
+
+  <div class="overflow-x-auto">
+    <!-- força largura mínima p/ não “amassar” no desktop e permitir scroll no celular -->
+    <table class="min-w-[900px] w-full text-sm">
+      <thead class="bg-slate-50 text-slate-600">
+        <tr>
+          <th class="px-3 py-2 text-left font-semibold w-28">RGM</th>
+          <th class="px-3 py-2 text-left font-semibold">Aluno</th>
+          <!-- escondemos algumas colunas no mobile -->
+          <th class="px-3 py-2 text-left font-semibold hidden md:table-cell">Campus</th>
+          <th class="px-3 py-2 text-left font-semibold hidden lg:table-cell">Grupo</th>
+          <th class="px-3 py-2 text-left font-semibold hidden xl:table-cell">Orientador</th>
+          <th class="px-3 py-2 text-right font-semibold hidden md:table-cell">RI</th>
+          <th class="px-3 py-2 text-right font-semibold hidden md:table-cell">RII</th>
+          <th class="px-3 py-2 text-right font-semibold hidden md:table-cell">Paper</th>
+          <th class="px-3 py-2 text-right font-semibold">Banner</th>
+        </tr>
+      </thead>
+
+      <tbody class="divide-y divide-slate-100">
+        {% for r in rows %}
+        <tr class="hover:bg-slate-50 align-top">
+          <!-- RGM -->
+          <td class="px-3 py-3 tabular-nums whitespace-nowrap">{{ r.student.rgm }}</td>
+
+          <!-- Aluno + detalhes (mobile) -->
+          <td class="px-3 py-3">
+            <div class="font-medium text-slate-800">{{ r.student.name }}</div>
+
+            <!-- bloco compacto só no mobile -->
+            <div class="md:hidden mt-1 space-y-1 text-xs text-slate-600">
+              <div class="line-clamp-2">
+                {% if r.group %}
+                  <span class="font-medium">Grupo:</span>
+                  {{ r.group.id }} - {{ (r.group.title or 'Sem título')|truncate(80) }}
+                {% else %}
+                  <span class="font-medium">Grupo:</span> -
+                {% endif %}
+              </div>
+              <div>
+                <span class="font-medium">Orientador:</span>
+                {{ r.orientador.full_name if r.orientador else '-' }}
+              </div>
+              <div class="flex flex-wrap gap-x-3 gap-y-1">
+                <span>RI: {{ '{:.1f}'.format(r.ri) if r.ri is not none else '-' }}</span>
+                <span>RII: {{ '{:.1f}'.format(r.rii) if r.rii is not none else '-' }}</span>
+                <span>Paper: {{ '{:.1f}'.format(r.paper) if r.paper is not none else '-' }}</span>
+              </div>
+            </div>
+          </td>
+
+          <!-- Desktop / tablets -->
+          <td class="px-3 py-3 hidden md:table-cell">
+            {{ r.student.campus.name if r.student.campus else '-' }}
+          </td>
+          <td class="px-3 py-3 hidden lg:table-cell">
+            {% if r.group %}
+              <div class="max-w-[52ch] line-clamp-2">
+                <span class="text-slate-500">{{ r.group.id }} -</span>
+                {{ r.group.title or 'Sem título' }}
+              </div>
+            {% else %} - {% endif %}
+          </td>
+          <td class="px-3 py-3 hidden xl:table-cell">
+            {{ r.orientador.full_name if r.orientador else '-' }}
+          </td>
+
+          <td class="px-3 py-3 text-right hidden md:table-cell">
+            {{ '{:.1f}'.format(r.ri) if r.ri is not none else '-' }}
+          </td>
+          <td class="px-3 py-3 text-right hidden md:table-cell">
+            {{ '{:.1f}'.format(r.rii) if r.rii is not none else '-' }}
+          </td>
+          <td class="px-3 py-3 text-right hidden md:table-cell">
+            {{ '{:.1f}'.format(r.paper) if r.paper is not none else '-' }}
+          </td>
+          <td class="px-3 py-3 text-right font-medium text-slate-800">
+            {{ '{:.1f}'.format(r.banner) if r.banner is not none else '-' }}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" class="px-3 py-6 text-center text-slate-500">
+            Nenhum aluno nesta oferta.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

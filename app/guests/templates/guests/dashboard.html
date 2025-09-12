@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% import "_components.html" as ui %}
+{% block title %}Convidado — TGI{% endblock %}
+
+{% block content %}
+  <div class="mb-4">
+    <h1 class="text-xl font-semibold text-slate-800">Bem-vindo(a)!</h1>
+    <p class="text-slate-600">Use os atalhos abaixo para avaliar os pôsteres.</p>
+  </div>
+
+  <div class="grid sm:grid-cols-2 gap-4">
+    <a href="{{ url_for('guests.poster_eval') }}"
+       class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow transition flex items-center gap-4">
+      <i class="fa-solid fa-star-half-stroke text-2xl text-indigo-600"></i>
+      <div>
+        <div class="font-semibold text-slate-800">Avaliar pôster</div>
+        <div class="text-sm text-slate-600">Selecione um grupo e registre sua avaliação.</div>
+      </div>
+    </a>
+
+    <a href="{{ url_for('guests.my_evals') }}"
+       class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow transition flex items-center gap-4">
+      <i class="fa-solid fa-rectangle-list text-2xl text-slate-600"></i>
+      <div>
+        <div class="font-semibold text-slate-800">Minhas avaliações</div>
+        <div class="text-sm text-slate-600">Listagem das avaliações que realizei.</div>
+      </div>
+    </a>
+  </div>
+{% endblock %}

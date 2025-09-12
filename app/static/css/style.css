@@ -1,0 +1,26 @@
+/* Campos de formulário padrão do app */
+.input {
+  width: 100%;
+  border: 1px solid #cbd5e1;      /* slate-300 */
+  background: #fff;
+  color: #0f172a;                 /* slate-900 */
+  padding: 0.5rem 0.75rem;        /* px-3 py-2 */
+  border-radius: 0.5rem;          /* rounded-lg */
+  box-shadow: 0 1px 1px rgba(2, 6, 23, .04); /* shadow-sm */
+  transition: border-color .15s, box-shadow .15s;
+}
+.input::placeholder { color: #94a3b8; }      /* slate-400 */
+.input:focus {
+  outline: 2px solid transparent;
+  border-color: #6366f1;          /* indigo-500 */
+  box-shadow: 0 0 0 3px rgba(99,102,241,.2); /* ring-2 indigo-200 */
+}
+
+/* Melhoras para <input type=number> */
+input[type="number"].input {
+  -moz-appearance: textfield;
+}
+input[type="number"].input::-webkit-outer-spin-button,
+input[type="number"].input::-webkit-inner-spin-button {
+  margin: 0;
+}

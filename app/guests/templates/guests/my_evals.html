@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+{% block title %}Minhas avaliações · TGI{% endblock %}
+
+{% block content %}
+<div class="mb-4 flex items-center justify-between">
+  <div>
+    <h1 class="text-xl font-semibold text-slate-800">Minhas avaliações</h1>
+    <p class="text-slate-600">Grupos já avaliados por você.</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{{ url_for('guests.poster_eval') }}"
+       class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+      <i class="fa-regular fa-clipboard"></i> <span class="hidden sm:inline">Avaliar outro pôster</span>
+    </a>
+  </div>
+</div>
+
+{# Mobile: cards #}
+<div class="grid gap-2 sm:hidden">
+  {% for it in items %}
+    <div class="rounded-lg border border-slate-200 bg-white px-4 py-3">
+      <div class="text-xs text-slate-500">Grupo</div>
+      <div class="font-semibold text-slate-800">#{{ it.id }}</div>
+      <div class="mt-1 text-sm text-slate-700">{{ it.title }}</div>
+    </div>
+  {% else %}
+    <div class="rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-600">
+      Você ainda não avaliou nenhum grupo.
+    </div>
+  {% endfor %}
+</div>
+
+{# Desktop: tabela #}
+<div class="hidden sm:block overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+  <table class="min-w-full text-sm">
+    <thead class="bg-slate-50 text-slate-600">
+      <tr>
+        <th class="px-3 py-2 text-left font-semibold w-24">Grupo</th>
+        <th class="px-3 py-2 text-left font-semibold">Tema</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for it in items %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-3 py-2 font-medium text-slate-800">#{{ it.id }}</td>
+        <td class="px-3 py-2">{{ it.title }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="2" class="px-3 py-6 text-center text-slate-500">
+          Você ainda não avaliou nenhum grupo.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

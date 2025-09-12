@@ -1,0 +1,90 @@
+{# app/templates/_components.html #}
+{# ========= BOTÕES & BADGES (Tailwind) ========= #}
+
+{# Badge simples #}
+{% macro badge(text, tone='slate') -%}
+  {% set tone_map = {
+    'slate':   'bg-slate-100 text-slate-700 ring-slate-200',
+    'indigo':  'bg-indigo-100 text-indigo-700 ring-indigo-200',
+    'emerald': 'bg-emerald-100 text-emerald-700 ring-emerald-200',
+    'amber':   'bg-amber-100 text-amber-800 ring-amber-200',
+    'rose':    'bg-rose-100 text-rose-700 ring-rose-200'
+  } %}
+  <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ring-1 {{ tone_map.get(tone, tone_map['slate']) }}">{{ text }}</span>
+{%- endmacro %}
+
+{# Classe base + variação/size #}
+{% macro _btn_classes(variant='primary', size='md', extra_classes='') -%}
+  {% set base = 'inline-flex items-center gap-2 rounded-lg font-semibold shadow-sm transition
+                 focus:outline-none focus:ring-2 focus:ring-offset-2
+                 disabled:opacity-50 disabled:cursor-not-allowed' %}
+  {% set size_cls = {
+    'sm':'px-3 py-1.5 text-xs',
+    'md':'px-5 py-2.5 text-sm',
+    'lg':'px-6 py-3 text-base'
+  }[size] %}
+  {% set variant_cls = {
+    'primary':   'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-400',
+    'secondary': 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400 focus:ring-slate-300',
+    'danger':    'bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-400',
+    'success':   'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-400',
+    'ghost':     'bg-transparent text-slate-700 hover:bg-slate-100 focus:ring-slate-300'
+  }[variant] %}
+  {{ (base ~ ' ' ~ size_cls ~ ' ' ~ variant_cls ~ ' ' ~ (extra_classes or '')) | trim }}
+{%- endmacro %}
+
+{# Anchor ou Button automático: se href => <a>, senão => <button> #}
+{% macro btn(label, href=None, icon=None, variant='primary', size='md', extra_classes='', type_='button', name=None, value=None, disabled=False) -%}
+  {% set cls = _btn_classes(variant, size, extra_classes) %}
+  {% if href %}
+    <a href="{{ href }}" class="{{ cls }}">
+      {% if icon %}<i class="{{ icon }}"></i>{% endif %} {{ label }}
+    </a>
+  {% else %}
+    <button
+      type="{{ type_ }}"
+      {% if name %}name="{{ name }}"{% endif %}
+      {% if value %}value="{{ value }}"{% endif %}
+      {% if disabled %}disabled{% endif %}
+      class="{{ cls }}"
+    >
+      {% if icon %}<i class="{{ icon }}"></i>{% endif %} {{ label }}
+    </button>
+  {% endif %}
+{%- endmacro %}
+
+{# Botão de submit que preserva o comportamento do WTForms (name/value) #}
+{% macro submit(label='Salvar', icon='fa-solid fa-floppy-disk', variant='primary', size='md', name=None, value='1', extra_classes='') -%}
+  {{ btn(label, href=None, icon=icon, variant=variant, size=size, extra_classes=extra_classes,
+         type_='submit', name=name, value=value) }}
+{%- endmacro %}
+
+{# Barra de botões (alinha e cria wrap em telas pequenas) #}
+{% macro btnbar(items=[], align='start') -%}
+  {% set align_map = {'start':'justify-start','center':'justify-center','end':'justify-end','between':'justify-between'} %}
+  <div class="flex flex-wrap gap-2 {{ align_map.get(align,'justify-start') }}">
+    {# items: lista de strings já renderizadas (chamadas a ui.btn/ui.submit) #}
+    {% for it in items %}{{ it|safe }}{% endfor %}
+  </div>
+{%- endmacro %}
+{# Alertas (flash messages) #}
+{% macro alert(message, category='info') -%}
+  {% set cls_map = {
+    'success': 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+    'warning': 'bg-amber-50 text-amber-800 border border-amber-200',
+    'danger':  'bg-rose-50 text-rose-700 border border-rose-200',
+    'error':   'bg-rose-50 text-rose-700 border border-rose-200',
+    'info':    'bg-slate-50 text-slate-700 border border-slate-200'
+  } %}
+  {% set icon_map = {
+    'success': 'fa-solid fa-circle-check',
+    'warning': 'fa-solid fa-triangle-exclamation',
+    'danger':  'fa-solid fa-circle-exclamation',
+    'error':   'fa-solid fa-circle-exclamation',
+    'info':    'fa-solid fa-circle-info'
+  } %}
+  <div class="rounded-md px-3 py-2 text-sm flex items-start gap-2 {{ cls_map.get(category, cls_map['info']) }}">
+    <i class="{{ icon_map.get(category, icon_map['info']) }} mt-0.5"></i>
+    <div class="min-w-0">{{ message }}</div>
+  </div>
+{%- endmacro %}

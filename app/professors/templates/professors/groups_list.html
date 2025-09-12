@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+{% import "_components.html" as ui %}
+
+{% block title %}Meus Grupos{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between gap-2">
+  <div>
+    <h1 class="text-xl font-semibold text-slate-800">Meus Grupos</h1>
+  </div>
+
+</div>
+
+<div class="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+  <table class="min-w-full text-sm">
+    <thead class="bg-cyan-600 text-white">
+      <tr>
+        <th class="px-3 py-2 text-left font-semibold w-16">#</th>
+        <th class="px-3 py-2 text-left font-semibold">Título</th>
+        <th class="px-3 py-2 text-right font-semibold w-24">Relatório I</th>
+        <th class="px-3 py-2 text-right font-semibold w-24">Relatório II</th>
+        <th class="px-3 py-2 text-right font-semibold w-24">Paper</th>
+        <th class="px-3 py-2 text-right font-semibold w-64">Ações</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for g in groups %}
+        {% set sc = scores.get(g.id, {}) %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-3 py-2">{{ g.id }}</td>
+          <td class="px-3 py-2">
+            <span class="font-medium text-slate-800">{{ g.title or '-' }}</span>
+          </td>
+
+          {# Máscara com 2 casas quando houver valor, senão '-' #}
+          <td class="px-3 py-2 text-right">
+            {{ '%.2f'|format(sc.ri) if sc.ri is not none else '-' }}
+          </td>
+          <td class="px-3 py-2 text-right">
+            {{ '%.2f'|format(sc.rii) if sc.rii is not none else '-' }}
+          </td>
+          <td class="px-3 py-2 text-right">
+            {{ '%.2f'|format(sc.paper) if sc.paper is not none else '-' }}
+          </td>
+
+          <td class="px-3 py-2">
+            <div class="flex justify-end gap-2">
+              {# Abrir em MODAL (fallback no href) #}
+              <a
+                class="inline-flex items-center gap-2 rounded-md font-medium transition focus:outline-none focus:ring-2 focus:ring-offset-2 bg-transparent hover:bg-slate-100 text-slate-700 focus:ring-slate-400 text-sm px-4 py-2 js-group-modal"
+                href="{{ url_for('professors.group_detail', group_id=g.id) }}"
+                data-modal-url="{{ url_for('professors.group_detail_modal', group_id=g.id) }}"
+              >
+                <i class="fa-regular fa-folder-open"></i> Abrir
+              </a>
+
+              {{ ui.btn("Notas",
+                        href=url_for('professors.group_grades_edit', group_id=g.id),
+                        variant='secondary',
+                        icon='fa-solid fa-pen-to-square') }}
+            </div>
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td class="px-3 py-10 text-center text-slate-500" colspan="6">
+            <div class="flex flex-col items-center gap-2">
+              <i class="fa-regular fa-folder-open text-2xl text-slate-400"></i>
+              <span>Nenhum grupo atribuído.</span>
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

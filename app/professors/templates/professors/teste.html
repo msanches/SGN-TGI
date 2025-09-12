@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block title %}Meus Grupos · TGI{% endblock %}
+{% block content %}
+  <h2>Meus Grupos</h2>
+
+  <form method="get" class="form-inline">
+    <input type="text" name="q" placeholder="Buscar por título, aluno, RGM ou oferta" value="{{ q }}">
+    <button type="submit">Buscar</button>
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr><th>#</th><th>Título</th><th>Ações</th></tr>
+    </thead>
+    <tbody>
+    {% for g in groups or [] %}
+      <tr>
+        <td>{{ g.id }}</td>
+        <td>{{ g.title or '-' }}</td>
+        <td>
+          <a class="btn" href="{{ url_for('professors.group_detail', group_id=g.id) }}">Abrir</a>
+          <a class="btn" href="{{ url_for('professors.group_grades_edit', group_id=g.id) }}">Notas</a>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="3">Nenhum grupo atribuído.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

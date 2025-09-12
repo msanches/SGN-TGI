@@ -1,0 +1,78 @@
+{% extends "layout.html" %}
+{% block title %}Grupos · TGI{% endblock %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-5">
+  <h2 class="text-xl font-semibold text-slate-800">Grupos</h2>
+  <a href="{{ url_for('admin.groups_new') }}"
+     class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+    <i class="fa-solid fa-plus"></i>
+    <span>Criar Grupo</span>
+  </a>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-100 border-b">
+        <tr class="text-left text-slate-600">
+          <th class="py-3 px-4 w-16">#</th>
+          <th class="py-3 px-4">Título</th>
+          <th class="py-3 px-4">Orientador</th>
+          <th class="py-3 px-4">Membros</th>
+          <th class="py-3 px-4 w-[260px]">Ações</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for row in groups %}
+          <tr class="hover:bg-slate-50">
+            <td class="py-3 px-4 font-medium text-slate-700">#{{ row.g.id }}</td>
+            <td class="py-3 px-4">{{ row.g.title or '-' }}</td>
+            <td class="py-3 px-4">{{ row.orientador or '-' }}</td>
+            <td class="py-3 px-4">
+              {% for st in row.members %}
+                <span class="inline-block px-2 py-1 mr-1 mb-1 rounded-full bg-slate-100 text-slate-700">
+                  {{ st.name }} ({{ st.rgm }})
+                </span>
+              {% else %}
+                <span class="text-slate-400">—</span>
+              {% endfor %}
+            </td>
+            <td class="py-3 px-4">
+              <div class="flex flex-wrap gap-2">
+                <a href="{{ url_for('admin.groups_edit', group_id=row.g.id) }}"
+                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border hover:bg-slate-50">
+                  <i class="fa-regular fa-pen-to-square"></i>
+                  <span>Editar</span>
+                </a>
+                <a href="{{ url_for('admin.groups_grades', group_id=row.g.id) }}"
+                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border hover:bg-slate-50">
+                  <i class="fa-solid fa-list-check"></i>
+                  <span>Notas</span>
+                </a>
+                <form action="{{ url_for('admin.groups_delete', group_id=row.g.id) }}"
+                      method="post" class="inline"
+                      onsubmit="return confirm('Excluir o grupo #{{ row.g.id }}?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit"
+                          class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-rose-600 hover:bg-rose-50">
+                    <i class="fa-regular fa-trash-can"></i>
+                    <span>Excluir</span>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="5" class="py-10 px-4 text-center text-slate-500">
+              Nenhum grupo encontrado.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

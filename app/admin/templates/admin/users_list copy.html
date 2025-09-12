@@ -1,0 +1,220 @@
+{% extends "layout.html" %}
+{% block title %}Usuários · TGI{% endblock %}
+
+{% block content %}
+
+<h2 class="text-xl font-semibold mb-4">Usuários</h2>
+
+<!-- Toolbar -->
+<form method="get"
+      class="bg-white rounded-xl shadow ring-1 ring-slate-200 p-4 mb-4">
+  <div class="grid grid-cols-1 md:grid-cols-[minmax(240px,1fr)_220px_auto] gap-3 items-end">
+    <div>
+      <label class="block text-xs font-medium text-slate-600 mb-1">Busca</label>
+      <input type="text" name="q" value="{{ q or '' }}"
+             class="w-full px-3 py-2 rounded-md border border-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+             placeholder="Nome ou e-mail">
+    </div>
+
+    <div>
+      <label class="block text-xs font-medium text-slate-600 mb-1">Perfil</label>
+      <select name="role"
+              class="w-full px-3 py-2 rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <option value="">Todos</option>
+        <option value="admin"     {{ 'selected' if role=='admin' else '' }}>Admin</option>
+        <option value="professor" {{ 'selected' if role=='professor' else '' }}>Professor</option>
+        <option value="guest"     {{ 'selected' if role=='guest' else '' }}>Convidado</option>
+      </select>
+    </div>
+
+    <div class="flex gap-2 justify-start md:justify-end">
+      <button type="submit"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800 shadow-sm">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <span>Filtrar</span>
+      </button>
+
+      <a href="{{ url_for('admin.users_new') }}"
+         class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 shadow-sm">
+        <i class="fa-solid fa-user-plus"></i>
+        <span>Novo usuário</span>
+      </a>
+    </div>
+  </div>
+</form>
+
+{# ---------- DESKTOP / TABLE (md+) ---------- #}
+<div class="bg-white hidden md:block">
+  <div class="overflow-x-auto">
+    <table class="min-w-[880px] w-full border border-slate-200 rounded-lg overflow-hidden">
+      <thead class="bg-blue-700 text-white text-sm">
+        <tr>
+          <th class="px-4 py-2 text-left">Nome</th>
+          <th class="px-4 py-2 text-left">E-mail</th>
+          <th class="px-4 py-2 text-left">Perfil</th>
+          <th class="px-4 py-2 text-left">Ativo</th>
+          <th class="px-4 py-2 text-center">Grupos</th>
+          <th class="px-4 py-2 text-left">Ações</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for u in users %}
+        <tr class="hover:bg-indigo-50/40">
+          <!-- Nome (clicável p/ professor com grupos) -->
+          {# dentro do <td> do Nome #}
+            <td class="px-4 py-2 align-middle">
+    {% set rv = (u.role_value or '')|lower %}
+    {% set rn = (u.role.name if u.role is not none else '')|lower %}
+    {% set rv2 = (u.role.value if u.role is not none else '')|lower %}
+    {% set is_prof = rv == 'professor' or rn == 'professor' or rv2 == 'professor' %}
+    {% set cnt = group_counts.get(u.id, 0) %}
+
+    {% if is_prof and cnt > 0 %}
+        <a href="{{ url_for('admin.users_groups', user_id=u.id) }}"
+        class="font-medium text-indigo-700 hover:underline"
+        title="Ver grupos orientados por {{ u.full_name }}">
+        {{ u.full_name }}
+        </a>
+    {% else %}
+        <span class="font-medium text-slate-900">{{ u.full_name }}</span>
+    {% endif %}
+            </td>
+
+
+          <!-- E-mail -->
+          <td class="px-4 py-2 align-middle">
+            <div class="truncate max-w-[38ch] text-slate-600" title="{{ u.email }}">
+              {{ u.email }}
+            </div>
+          </td>
+
+          <!-- Perfil -->
+          <td class="px-4 py-2 align-middle">
+            <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
+              {% if u.role_value == 'admin' %}Admin
+              {% elif u.role_value == 'professor' %}Professor
+              {% else %}Convidado{% endif %}
+            </span>
+          </td>
+
+          <!-- Ativo -->
+          <td class="px-4 py-2 align-middle">
+            {% if u.is_active %}
+              <span class="inline-flex items-center gap-1 text-emerald-700">
+                <i class="fa-solid fa-circle-check"></i> Ativo
+              </span>
+            {% else %}
+              <span class="inline-flex items-center gap-1 text-slate-500">
+                <i class="fa-regular fa-circle"></i> Inativo
+              </span>
+            {% endif %}
+          </td>
+
+          <!-- Grupos -->
+          <td class="px-4 py-2 align-middle text-center">
+            {% if (u.role_value or '').lower() == 'professor' %}
+              {{ group_counts.get(u.id, 0) }}
+            {% else %} — {% endif %}
+          </td>
+
+          <!-- Ações -->
+          <td class="px-4 py-2 align-middle whitespace-nowrap">
+            <div class="flex items-center gap-2">
+              <a href="{{ url_for('admin.users_edit', user_id=u.id) }}"
+                 class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50">
+                <i class="fa-solid fa-pen-to-square"></i> Editar
+              </a>
+              <form action="{{ url_for('admin.users_delete', user_id=u.id) }}"
+                    method="post" class="inline-block"
+                    onsubmit="return confirm('Excluir usuário {{ u.full_name }}?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border border-rose-300 text-rose-700 hover:bg-rose-50">
+                  <i class="fa-solid fa-trash"></i> Excluir
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td class="px-4 py-6 text-slate-500 text-center" colspan="6">
+            Nenhum usuário encontrado.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# ---------- MOBILE / CARDS (< md) ---------- #}
+<div class="md:hidden space-y-3">
+  {% for u in users %}
+  <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        {% if (u.role_value or '').lower() == 'professor' and group_counts.get(u.id, 0) > 0 %}
+          <a href="{{ url_for('admin.users_groups', user_id=u.id) }}"
+             class="font-medium text-indigo-700 hover:underline">
+            {{ u.full_name }}
+          </a>
+        {% else %}
+          <div class="font-medium text-slate-900">{{ u.full_name }}</div>
+        {% endif %}
+        <div class="text-sm text-slate-600 truncate" title="{{ u.email }}">{{ u.email }}</div>
+      </div>
+      <div class="shrink-0 text-right">
+        <div>
+          <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
+            {% if u.role_value == 'admin' %}Admin
+            {% elif u.role_value == 'professor' %}Professor
+            {% else %}Convidado{% endif %}
+          </span>
+        </div>
+        <div class="mt-1 text-xs">
+          {% if u.is_active %}
+            <span class="inline-flex items-center gap-1 text-emerald-700">
+              <i class="fa-solid fa-circle-check"></i> Ativo
+            </span>
+          {% else %}
+            <span class="inline-flex items-center gap-1 text-slate-500">
+              <i class="fa-regular fa-circle"></i> Inativo
+            </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-3 flex items-center justify-between">
+      <div class="text-sm text-slate-700">
+        {% if (u.role_value or '').lower() == 'professor' %}Grupos: {{ group_counts.get(u.id, 0) }}{% endif %}
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="{{ url_for('admin.users_edit', user_id=u.id) }}"
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50">
+          <i class="fa-solid fa-pen-to-square"></i> Editar
+        </a>
+        <form action="{{ url_for('admin.users_delete', user_id=u.id) }}"
+              method="post" class="inline-block"
+              onsubmit="return confirm('Excluir usuário {{ u.full_name }}?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-rose-300 text-rose-700 hover:bg-rose-50">
+            <i class="fa-solid fa-trash"></i> Excluir
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="rounded-xl border border-slate-200 bg-white p-4 text-slate-500 text-center">
+    Nenhum usuário encontrado.
+  </div>
+  {% endfor %}
+</div>
+
+  </div>
+</div>
+
+{% endblock %}

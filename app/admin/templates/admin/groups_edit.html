@@ -1,0 +1,127 @@
+{% extends "layout.html" %}
+{% block title %}Editar Grupo #{{ group.id }} · TGI{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-8">
+  <div class="bg-white shadow rounded-xl border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-slate-800">Editar Grupo #{{ group.id }}</h2>
+      <a href="{{ url_for('admin.groups_list') }}" class="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50">
+        <i class="fa-solid fa-arrow-left"></i>
+        Voltar
+      </a>
+    </div>
+
+    <form method="post" novalidate class="p-6 space-y-6">
+      {{ form.hidden_tag() }}
+
+      {# --- Título do projeto --- #}
+      <div>
+        <label for="title" class="block text-sm font-medium text-slate-700 mb-1">
+          {{ form.title.label.text }}
+        </label>
+        {{ form.title(
+          id="title",
+          class_="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
+          placeholder="Ex.: Sistema de Gestão de TGI"
+        ) }}
+        {% if form.title.errors %}
+          <ul class="mt-1 text-sm text-rose-600 space-y-0.5">
+            {% for e in form.title.errors %}<li>{{ e }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      {# --- Orientador (User) --- #}
+      <div>
+        <label for="orientador_user_id" class="block text-sm font-medium text-slate-700 mb-1">
+          {{ form.orientador_user_id.label.text }}
+        </label>
+        {{ form.orientador_user_id(
+          id="orientador_user_id",
+          class_="w-full md:w-1/2 rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+        ) }}
+        <p class="text-xs text-slate-500 mt-1">Escolha o professor orientador do grupo.</p>
+        {% if form.orientador_user_id.errors %}
+          <ul class="mt-1 text-sm text-rose-600 space-y-0.5">
+            {% for e in form.orientador_user_id.errors %}<li>{{ e }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      {# --- RGMs (um por linha) --- #}
+      <div>
+        <label for="rgms" class="block text-sm font-medium text-slate-700 mb-1">
+          {{ form.rgms.label.text }}
+        </label>
+        {{ form.rgms(
+          id="rgms",
+          rows=10,
+          class_="w-full font-mono rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
+          placeholder="1234567\n2345678\n3456789"
+        ) }}
+        <p class="text-xs text-slate-500 mt-1">Um RGM por linha. Alunos repetidos ou já associados a outro grupo serão rejeitados.</p>
+        {% if form.rgms.errors %}
+          <ul class="mt-1 text-sm text-rose-600 space-y-0.5">
+            {% for e in form.rgms.errors %}<li>{{ e }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      <div class="flex items-center justify-end gap-3">
+        <a href="{{ url_for('admin.groups_list') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50">
+          <i class="fa-solid fa-xmark"></i>
+          Cancelar
+        </a>
+        {{ form.submit(
+          class_="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white font-medium px-5 py-2.5 rounded-lg transition-colors"
+        ) }}
+      </div>
+    </form>
+  </div>
+
+  {# --- Membros atuais --- #}
+  <div class="bg-white shadow rounded-xl border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h3 class="text-base font-semibold text-slate-800">Membros atuais</h3>
+    </div>
+    <div class="p-6 overflow-x-auto">
+      <table class="min-w-full border border-slate-200 rounded-lg overflow-hidden">
+        <thead class="bg-slate-50 text-slate-700 text-sm">
+          <tr>
+            <th class="text-left px-3 py-2 border-b">RGM</th>
+            <th class="text-left px-3 py-2 border-b">Nome</th>
+            <th class="text-left px-3 py-2 border-b">Campus</th>
+            <th class="text-left px-3 py-2 border-b">Oferta</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200">
+          {% for s in members %}
+            <tr class="text-sm">
+              <td class="px-3 py-2 font-mono">{{ s.rgm }}</td>
+              <td class="px-3 py-2">{{ s.name }}</td>
+              <td class="px-3 py-2">{{ s.campus.name if s.campus else '-' }}</td>
+              <td class="px-3 py-2">{{ s.offering.code if s.offering else '-' }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td class="px-3 py-3 text-slate-500" colspan="4">Nenhum membro.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{# Prefill do textarea a partir de current_rgms (lista Python) #}
+<script>
+  (function () {
+    const ta = document.getElementById('rgms');
+    if (ta && !ta.value.trim()) {
+      const list = {{ current_rgms | tojson }};
+      ta.value = Array.isArray(list) ? list.join('\n') : (list || '');
+    }
+  })();
+</script>
+{% endblock %}

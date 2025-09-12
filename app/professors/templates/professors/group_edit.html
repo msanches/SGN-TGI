@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% block title %}Lançar Notas - Grupo {{ group.id }} · TGI{% endblock %}
+{% block content %}
+<h2>Lançar/Editar Notas - Grupo {{ group.id }} · {{ group.title or 'Sem título' }}</h2>
+
+<form method="post" novalidate>
+  {{ form.hidden_tag() }}
+
+  <div class="form-row">
+    <label>{{ form.relatorio_i.label }}</label>
+    {{ form.relatorio_i(size=10, step="0.01", min="0", max="10") }}
+    {% for e in form.relatorio_i.errors %}<div class="err">{{ e }}</div>{% endfor %}
+  </div>
+
+  <div class="form-row">
+    <label>{{ form.relatorio_ii.label }}</label>
+    {{ form.relatorio_ii(size=10, step="0.01", min="0", max="10") }}
+    {% for e in form.relatorio_ii.errors %}<div class="err">{{ e }}</div>{% endfor %}
+  </div>
+
+  <div class="form-row">
+    <label>{{ form.paper.label }}</label>
+    {{ form.paper(size=10, step="0.01", min="0", max="10") }}
+    {% for e in form.paper.errors %}<div class="err">{{ e }}</div>{% endfor %}
+  </div>
+
+  <div class="actions">
+    {{ form.submit(class_="btn primary") }}
+    <a class="btn" href="{{ url_for('professors.group_detail', group_id=group.id) }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

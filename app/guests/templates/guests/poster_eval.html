@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+{% import "_components.html" as ui %}
+{% block title %}Avaliação de Pôster · TGI{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h1 class="text-xl font-semibold text-slate-800">Avaliação de Pôster</h1>
+  <p class="text-slate-600">Selecione o grupo que você deseja avaliar.</p>
+</div>
+
+<section class="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
+  <p class="text-sm text-slate-600 mb-2">
+  Você avaliou <strong>{{ done }}</strong> de <strong>{{ total }}</strong> grupos.
+  <a class="underline ml-2"
+     href="{{ url_for('guests.poster_eval', all=('0' if show_all else '1')) }}">
+    {{ 'Ocultar já avaliados' if show_all else 'Mostrar já avaliados' }}
+  </a>
+</p>
+  <div class="grid gap-4 sm:grid-cols-[1fr_auto] items-end">
+    <div>
+      <label for="groupSelect" class="block text-sm text-slate-600 mb-1">Grupo</label>
+      <select id="groupSelect" class="input w-full">
+        <option value=""> - Selecione o grupo - </option>
+        {% for g in groups %}
+          <option value="{{ g.id }}"
+          {% if show_all and g.id in evaluated_ids %}disabled class="text-slate-400"{% endif %}>
+          {{ g.id }} · {{ g.title or 'Sem título' }}
+          {% if show_all and g.id in evaluated_ids %} (já avaliado){% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <button id="openEvalModal"
+              type="button"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+              disabled
+              data-base-url="{{ url_for('guests.poster_eval_modal', group_id=0) }}">
+        <i class="fa-solid fa-arrow-right"></i> Próximo
+      </button>
+    </div>
+  </div>
+
+  <hr class="my-6 border-slate-200">
+
+  <h2 class="text-sm font-medium text-slate-800 mb-2">Critérios & Pontuação</h2>
+  <ul class="grid sm:grid-cols-2 gap-2 text-sm text-slate-600">
+    <li>Insatisfatório: 1,0</li>
+    <li>Regular: 2,0</li>
+    <li>Bom: 3,0</li>
+    <li>Muito bom: 4,0</li>
+    <li>Excelente: 5,0</li>
+  </ul>
+  <p class="mt-2 text-xs text-slate-500">A nota do pôster (0–5) é a média das avaliações de todos os avaliadores.</p>
+</section>
+
+<script>
+  (function () {
+    const sel = document.getElementById('groupSelect');
+    const btn = document.getElementById('openEvalModal');
+    const base = btn.dataset.baseUrl; // .../poster/modal/0
+
+    function openModalWith(url) {
+      // Reaproveita a modal global
+      const backdrop = document.getElementById('modal-backdrop');
+      const modal = document.getElementById('modal');
+      const body = document.getElementById('modal-body');
+
+      fetch(url, {headers: {'X-Requested-With': 'fetch'}})
+        .then(r => r.text())
+        .then(html => {
+          body.innerHTML = html;
+          backdrop.classList.remove('hidden');
+          modal.classList.remove('hidden');
+        })
+        .catch(() => alert('Não foi possível abrir a avaliação.'))
+    }
+
+    sel.addEventListener('change', () => {
+      btn.disabled = !sel.value;
+    });
+
+    btn.addEventListener('click', () => {
+      if (!sel.value) return;
+      // troca o 0 pelo id escolhido
+      const url = base.replace(/0$/, String(sel.value));
+      openModalWith(url);
+    });
+  })();
+</script>
+{% endblock %}

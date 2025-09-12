@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% import "_components.html" as ui %}
+
+{% block title %}Minhas Ofertas · TGI{% endblock %}
+
+{% block content %}
+<div class="mb-4 flex items-center justify-between">
+  <div>
+    <h1 class="text-xl font-semibold text-slate-800">Minhas Ofertas</h1>
+    <p class="text-slate-600">Ofertas atribuídas a você.</p>
+  </div>
+  <div class="flex gap-2">
+    {{ ui.btn("Dashboard", href=url_for('professors.dashboard'), variant='secondary', icon='fa-solid fa-house') }}
+    {{ ui.btn("Meus grupos", href=url_for('professors.groups_list'), variant='secondary', icon='fa-solid fa-users') }}
+  </div>
+</div>
+
+<section class="rounded-xl border border-slate-200 bg-white shadow-sm">
+  <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-3">
+    <i class="fa-solid fa-layer-group text-slate-600"></i>
+    <h2 class="text-sm font-medium text-slate-800">Ofertas</h2>
+    {{ ui.badge((offerings or [])|length ~ " item(ns)", "slate") }}
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50 text-slate-600">
+        <tr>
+          <th class="px-3 py-2 text-left font-semibold">Código</th>
+          <th class="px-3 py-2 text-left font-semibold">Descrição</th>
+          <th class="px-3 py-2 text-left font-semibold">Ações</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for off in offerings or [] %}
+          <tr class="hover:bg-slate-50">
+            <td class="px-3 py-2 font-medium text-slate-800">{{ off.code }}</td>
+            <td class="px-3 py-2">{{ off.description or '-' }}</td>
+            <td class="px-3 py-2">
+              <div class="flex flex-wrap gap-2">
+                {{ ui.btn("Abrir", href=url_for('professors.offering_detail', offering_id=off.id),
+                          variant='secondary', icon='fa-regular fa-folder-open') }}
+                {{ ui.btn("CSV", href=url_for('professors.export_offering_csv', offering_id=off.id),
+                          variant='secondary', icon='fa-solid fa-file-csv') }}
+                {{ ui.btn("Excel", href=url_for('professors.export_offering_xlsx', offering_id=off.id),
+                          variant='secondary', icon='fa-solid fa-file-excel') }}
+              </div>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="3" class="px-3 py-6 text-center text-slate-500">
+              Nenhuma oferta atribuída a você.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

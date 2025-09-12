@@ -1,0 +1,88 @@
+{% extends "layout.html" %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] grid place-items-center">
+  <div class="w-full max-w-md">
+    <div class="bg-white shadow rounded-xl p-6 sm:p-8 border border-slate-200">
+      <div class="mb-6 text-center">
+        <div class="mx-auto w-12 h-12 rounded-full bg-slate-100 grid place-items-center text-slate-600 mb-3">
+          <i class="fa-solid fa-right-to-bracket"></i>
+        </div>
+        <h2 class="text-xl font-semibold text-slate-800">Entrar no TGI</h2>
+        <p class="text-sm text-slate-500">Use suas credenciais para continuar</p>
+      </div>
+
+      <form method="post" novalidate class="space-y-5">
+        {{ form.hidden_tag() }}
+
+        {# --- Email --- #}
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="email">
+            {{ form.email.label.text }}
+          </label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <i class="fa-solid fa-envelope"></i>
+            </span>
+            {{ form.email(
+                id="email",
+                class_="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
+                placeholder="voce@exemplo.com",
+                autocomplete="username"
+            ) }}
+          </div>
+          {% if form.email.errors %}
+            <ul class="mt-1 text-sm text-rose-600 space-y-0.5">
+              {% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+
+        {# --- Senha --- #}
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="password">
+            {{ form.password.label.text }}
+          </label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <i class="fa-solid fa-lock"></i>
+            </span>
+            {{ form.password(
+                id="password",
+                class_="w-full pl-10 pr-10 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
+                placeholder="••••••••",
+                autocomplete="current-password"
+            ) }}
+            {# Se quiser, dá pra adicionar um botão de mostrar/ocultar senha aqui no futuro #}
+          </div>
+          {% if form.password.errors %}
+            <ul class="mt-1 text-sm text-rose-600 space-y-0.5">
+              {% for e in form.password.errors %}<li>{{ e }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+
+        {# --- Remember me --- #}
+        <div class="flex items-center justify-between">
+          <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+            {{ form.remember(class_="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500") }}
+            <span>{{ form.remember.label.text }}</span>
+          </label>
+        </div>
+
+        {# --- Botão --- #}
+        <div>
+          {{ form.submit(
+              class_="w-full inline-flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 text-white font-medium py-2.5 rounded-lg transition-colors"
+          ) }}
+        </div>
+      </form>
+    </div>
+
+    <p class="text-center text-xs text-slate-400 mt-4">
+      Problemas para entrar? Fale com o administrador.
+    </p>
+  </div>
+</div>
+{% endblock %}

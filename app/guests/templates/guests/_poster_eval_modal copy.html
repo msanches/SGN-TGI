@@ -1,0 +1,60 @@
+{# app/templates/guests/_poster_eval_modal.html #}
+<div class="space-y-1">
+  <h3 id="modal-title" class="text-lg font-semibold text-slate-800">
+    Avaliar pôster — Grupo #{{ group.id }}
+  </h3>
+  <p class="text-sm text-slate-600">{{ group.title or 'Sem título' }}</p>
+</div>
+
+<div class="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
+  <div class="mb-2 font-medium">Alunos</div>
+  <ul class="list-disc pl-5">
+    {% for s in students %}
+      <li>{{ s.name }} — RGM {{ s.rgm }}{% if s.campus %} — {{ s.campus.name }}{% endif %}{% if s.offering %} — {{ s.offering.code }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<form method="post" action="{{ url_for('guests.poster_submit') }}" class="mt-4 space-y-4">
+  <input type="hidden" name="group_id" value="{{ group.id }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  {% set items = [
+    ('mat','Qualidade do material de exposição (pôster)'),
+    ('cri','Criatividade do pôster'),
+    ('exp','Capacidade de exposição'),
+    ('pos','Postura na apresentação'),
+    ('dom','Domínio do assunto'),
+    ('imp','Importância do tema expressa pela equipe'),
+    ('tmp','Tempo adequado de exposição')
+  ] %}
+
+  {% for key, label in items %}
+  <div>
+    <div class="mb-1 text-sm font-medium text-slate-700">{{ label }}</div>
+    <div class="grid grid-cols-5 gap-2 text-sm">
+      {% for val, txt in [(1,'Insatisfatório'),(2,'Regular'),(3,'Bom'),(4,'Muito bom'),(5,'Excelente')] %}
+        <label class="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 hover:bg-slate-50">
+          <input type="radio" name="{{ key }}" value="{{ val }}" required>
+          <span>{{ txt }}</span>
+        </label>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div>
+    <label class="block text-sm text-slate-600 mb-1">Observações (opcional)</label>
+    <textarea name="comments" rows="3"
+              class="w-full rounded-md border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 text-sm"></textarea>
+  </div>
+
+  <div class="flex gap-2 pt-2">
+    <button type="submit" class="inline-flex items-center gap-2 rounded-md bg-indigo-600 text-white px-4 py-2 text-sm hover:bg-indigo-700">
+      <i class="fa-solid fa-floppy-disk"></i> Salvar avaliação
+    </button>
+    <button type="button" class="modal-close inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50">
+      Cancelar
+    </button>
+  </div>
+</form>
