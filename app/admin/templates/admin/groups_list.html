@@ -2,14 +2,31 @@
 {% block title %}Grupos · TGI{% endblock %}
 {% block content %}
 
-<div class="flex items-center justify-between mb-5">
+<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
   <h2 class="text-xl font-semibold text-slate-800">Grupos</h2>
-  <a href="{{ url_for('admin.groups_new') }}"
-     class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
-    <i class="fa-solid fa-plus"></i>
-    <span>Criar Grupo</span>
-  </a>
+
+  <!-- Ações (responsivo) -->
+  <div class="flex flex-wrap items-center gap-2">
+    <!-- Exportar Excel -->
+    <a href="{{ url_for('reports.groups_export', fmt='xlsx') }}"
+       class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 text-white px-3 py-2 text-sm
+              hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2"
+       aria-label="Exportar Excel" title="Exportar Excel">
+      <i class="fa-solid fa-file-excel"></i>
+      <span class="hidden sm:inline">Exportar Excel</span>
+    </a>
+
+    <!-- Criar Grupo -->
+    <a href="{{ url_for('admin.groups_new') }}"
+       class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 text-white px-3 py-2 text-sm
+              hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2"
+       aria-label="Criar grupo" title="Criar grupo">
+      <i class="fa-solid fa-plus"></i>
+      <span class="hidden sm:inline">Criar grupo</span>
+    </a>
+  </div>
 </div>
+
 
 <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
   <div class="overflow-x-auto">

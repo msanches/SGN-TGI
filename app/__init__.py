@@ -9,6 +9,10 @@ from .models import User  # garante que modelos carregam
 from .commands import register_commands
 import os
 
+from app.reports import reports_bp
+
+
+
 def create_app() -> Flask:
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(Config)
@@ -43,6 +47,7 @@ def create_app() -> Flask:
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(professors_bp, url_prefix="/professors")
     app.register_blueprint(guests_bp, url_prefix="/guests")
+    app.register_blueprint(reports_bp)
 
     from flask_login import login_required, current_user
     @app.route("/")
