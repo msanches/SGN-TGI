@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    # Faz "host.docker.internal" apontar para o Host Linux
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Se quiser persistir algo (ex.: logs/uploads), adicione volumes:
+    # volumes:
+    #   - ./var/log:/app/var/log

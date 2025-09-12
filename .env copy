@@ -1,0 +1,19 @@
+# Porta exposta pelo container
+APP_PORT=8000
+
+# ===== Banco externo (MySQL do host) =====
+DB_DIALECT=mysql
+DB_DRIVER=pymysql
+DB_HOST=193.203.166.18
+DB_PORT=3306
+DB_NAME=u485182729_tgi
+DB_USER=u485182729_tgi
+DB_PASS="tgi_1234567890UCS"
+
+# SQLAlchemy (usando PyMySQL, 100% Python)
+SQLALCHEMY_DATABASE_URI=mysql+pymysql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?charset=utf8mb4
+
+# Flask
+SECRET_KEY=troque-esta-chave
+FLASK_ENV=production
+TZ=America/Sao_Paulo
