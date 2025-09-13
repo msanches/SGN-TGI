@@ -6,10 +6,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 # Instala somente o que precisa (tini) — nada de build-essential
-RUN set -eux; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends tini; \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl ca-certificates \
+ && curl -fsSL -o /usr/local/bin/tini https://github.com/krallin/tini/releases/download/v0.19.0/tini \
+ && chmod +x /usr/local/bin/tini \
+ && apt-get purge -y --auto-remove curl \
+ && rm -rf /var/lib/apt/lists/*
 
 # Usuário não-root
 RUN useradd -m appuser
