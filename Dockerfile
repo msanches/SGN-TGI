@@ -16,4 +16,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 ENV APP_PORT=8000
 EXPOSE 8000
-CMD ["tini","-g","--","gunicorn","-w","3","-b","0.0.0.0:8000","wsgi:app"]
+CMD ["tini","-g","--","gunicorn","-w","1","-k","gthread","--threads","2", "--keep-alive","5", "-b","0.0.0.0:8000","wsgi:app"]
