@@ -32,7 +32,7 @@ ENTRYPOINT ["/usr/bin/tini","-g","--"]
 CMD ["gunicorn",
      "-w","1",
      "-k","gthread",
-     "--threads","2",
+     "--threads","3",
      "--keep-alive","5",
      "--timeout","30",
      "--graceful-timeout","30",
