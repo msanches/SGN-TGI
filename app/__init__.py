@@ -11,8 +11,6 @@ import os
 
 from app.reports import reports_bp
 
-
-
 def create_app() -> Flask:
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(Config)
@@ -71,13 +69,13 @@ def create_app() -> Flask:
             "admin.groups_new":  "Grupos",
             # PROFESSOR
             "professors.dashboard": "Dashboard",
-            "professors.groups_list": "Meus grupos",
-            "professors.offerings_list": "Minhas ofertas",
+            "professors.groups_list": "Grupos",
+            "professors.offerings_list": "Ofertas",
             "professors.offering_detail": "Oferta",
             # CONVIDADO
             "guests.dashboard": "Dashboard",
-            "guests.poster_eval": "Avaliar pôster",
-            "guests.my_reviews": "Minhas avaliações",
+            "guests.poster_eval": "Avaliar",
+            "guests.my_reviews": "Avaliações",
         }
         return {"page_label": labels.get(request.endpoint)}
 
