@@ -29,14 +29,4 @@ EXPOSE 8000
 ENTRYPOINT ["/usr/bin/tini","-g","--"]
 
 # Gunicorn: 1 worker + 2 threads, timeouts curtos, pouco log
-CMD ["gunicorn",
-     "-w","1",
-     "-k","gthread",
-     "--threads","3",
-     "--keep-alive","5",
-     "--timeout","30",
-     "--graceful-timeout","30",
-     "--max-requests","500",
-     "--max-requests-jitter","50",
-     "--log-level","warning",
-     "-b","0.0.0.0:8000","wsgi:app"]
+CMD ["gunicorn","-w","1","-k","gthread","--threads","3","--keep-alive","5","--timeout","30", "--graceful-timeout","30","--max-requests","500","--max-requests-jitter","50","--log-level","warning","-b","0.0.0.0:8000","wsgi:app"]
