@@ -1,12 +1,35 @@
-version: "3.9"
-
+# docker-compose.yml
 services:
   web:
-    build: .
-    restart: unless-stopped
-    env_file: .env
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Mapeie a porta externa que preferir (8080->8000 é mais seguro que 8000->8000)
     ports:
-      - "${APP_PORT:-8000}:8000"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    init: true   # <- equivalente ao tini, sem precisar instalar nada
+      - "8080:8000"
+    env_file:
+      - .env
+    environment:
+      # Pool enxuto p/ não afogar sua VPS
+      - SQLALCHEMY_POOL_SIZE=3
+      - SQLALCHEMY_MAX_OVERFLOW=0
+      - SQLALCHEMY_POOL_PRE_PING=1
+      - SQLALCHEMY_POOL_RECYCLE=280
+      # Garanta que está em produção
+      - FLASK_ENV=production
+    restart: unless-stopped
+    # Limites de recurso para evitar travamentos
+    deploy:
+      resources:
+        limits:
+          cpus: "0.60"
+          memory: 512M
+        reservations:
+          cpus: "0.20"
+          memory: 256M
+    # Logs girando (evita disco encher)
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"

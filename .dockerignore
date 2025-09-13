@@ -1,0 +1,16 @@
+.git
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+.mypy_cache/
+.pytest_cache/
+dist/
+build/
+node_modules/
+*.sqlite
+*.db
+.vscode/
+.idea/
