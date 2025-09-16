@@ -347,94 +347,35 @@ def groups_edit(group_id):
         sel = form.orientador_user_id.data
         group.orientador_user_id = None if sel == -1 else sel
 
-        # Normaliza lista de RGMs desejados
         lines = [ln.strip() for ln in (form.rgms.data or "").splitlines() if ln.strip()]
-        wanted_rgms = set(lines)
+        wanted = set(lines)
 
-        # Resolve RGMs -> Students
-        students = Student.query.filter(Student.rgm.in_(wanted_rgms)).all()
-        found_by_rgm = {s.rgm: s for s in students}
-        missing = [r for r in wanted_rgms if r not in found_by_rgm]
+        students = Student.query.filter(Student.rgm.in_(wanted)).all()
+        found = {s.rgm: s for s in students}
+        missing = [r for r in wanted if r not in found]
         if missing:
             flash(f"RGM(s) não encontrados: {', '.join(missing)}", "warning")
 
-        wanted_ids = {found_by_rgm[r].id for r in found_by_rgm}
         current_ids = {gs.student_id for gs in group.members}
+        wanted_ids  = {found[r].id for r in found}
 
-        # --- DETECÇÃO DE CONFLITOS (alunos já em outro grupo) ---
-        # Se não estiver reatribuindo, apenas avisa e não toca nos dados
-        reassign = (request.form.get("reassign") == "1")
+        # remover
+        for gs in list(group.members):
+            if gs.student_id not in wanted_ids:
+                db.session.delete(gs)
 
-        if wanted_ids:
-            conflicts = (
-                db.session.query(Student.id, Student.rgm, Student.name, Group.id, Group.title)
-                .join(GroupStudent, GroupStudent.student_id == Student.id)
-                .join(Group, Group.id == GroupStudent.group_id)
-                .filter(Student.id.in_(wanted_ids), GroupStudent.group_id != group.id)
-                .all()
-            )
-        else:
-            conflicts = []
+        # adicionar
+        for sid in wanted_ids - current_ids:
+            db.session.add(GroupStudent(group_id=group.id, student_id=sid))
 
-        if conflicts and not reassign:
-            # Só informa o problema e retorna 409 sem alterar nada
-            itens = [f"{rgm} - {name} (já no grupo #{gid}: '{gtitle}')" for sid, rgm, name, gid, gtitle in conflicts]
-            flash(
-                "Alguns alunos já pertencem a outro grupo e não foram adicionados:<br>" +
-                "<br>".join(itens) +
-                "<br><small>Dica: confirme a reatribuição marcando a opção 'Mover alunos de outros grupos' e salve novamente.</small>",
-                "warning"
-            )
-            # Recarrega a tela com membros atuais
-            members = [gs.student for gs in group.members]
-            current_rgms = [s.rgm for s in members]
-            return render_template("admin/groups_edit.html",
-                                   form=form, group=group, members=members, current_rgms=current_rgms), 409
+        db.session.commit()
+        flash("Grupo atualizado com sucesso.", "success")
+        return redirect(url_for("admin.groups_list"))
 
-        # --- A PARTIR DAQUI: APLICAR MUDANÇAS ---
-        try:
-            if conflicts and reassign:
-                # Remove vínculos antigos dos conflitantes (move)
-                conflict_ids = [sid for sid, *_ in conflicts]
-                GroupStudent.query.filter(GroupStudent.student_id.in_(conflict_ids)).delete(synchronize_session=False)
-
-            # Remover quem saiu deste grupo
-            to_remove = current_ids - wanted_ids
-            if to_remove:
-                GroupStudent.query.filter(
-                    GroupStudent.group_id == group.id,
-                    GroupStudent.student_id.in_(list(to_remove))
-                ).delete(synchronize_session=False)
-
-            # Adicionar quem falta (evita duplicar quem já está)
-            to_add = wanted_ids - (current_ids - set())  # current_ids já reflete antes das remoções
-            for sid in to_add:
-                db.session.add(GroupStudent(group_id=group.id, student_id=sid))
-
-            db.session.commit()
-
-            msg = "Grupo atualizado com sucesso."
-            if conflicts and reassign:
-                moved_rgms = ", ".join([rgm for _, rgm, *_ in conflicts])
-                msg += f" Reatribuídos: {moved_rgms}."
-            flash(msg, "success")
-            return redirect(url_for("admin.groups_list"))
-
-        except IntegrityError:
-            db.session.rollback()
-            # fallback defensivo: recalcula conflitos e avisa
-            flash("Conflito de membros detectado. Nenhuma alteração foi aplicada.", "danger")
-            members = [gs.student for gs in group.members]
-            current_rgms = [s.rgm for s in members]
-            return render_template("admin/groups_edit.html",
-                                   form=form, group=group, members=members, current_rgms=current_rgms), 409
-
-    # GET ou formulário inválido
     members = [gs.student for gs in group.members]
     current_rgms = [s.rgm for s in members]
     return render_template("admin/groups_edit.html",
                            form=form, group=group, members=members, current_rgms=current_rgms)
-
 
 @admin_bp.route("/groups/<int:group_id>/delete", methods=["POST"])
 @login_required

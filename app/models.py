@@ -24,13 +24,16 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(190), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     full_name = db.Column(db.String(150), nullable=False)
-    role = db.Column(Enum(Role), nullable=False)
+
+    #role = db.Column(Enum(Role), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default="guest")
+
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, server_default=func.now())
     updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
 
     # role pode ser string ('admin' | 'professor' | 'guest') ou Enum(Role)
-    role = db.Column(db.String(20), nullable=False, default="guest")
+   # role = db.Column(db.String(20), nullable=False, default="guest")
 
     @property
     def role_value(self) -> str:
