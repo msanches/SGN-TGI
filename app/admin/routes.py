@@ -32,6 +32,46 @@ from app.services.grades import upsert_assessment, get_assessment_score
 # Helpers comuns
 # =============================================================================
 
+# --- Ofertas para o select do usuário (mostra dono atual quando não é o próprio) ---
+def offering_choices_for_user(target_user_id: int | None = None):
+    rows = (
+        db.session.query(Offering.id, Offering.code, Offering.description,
+                         Offering.professor_id, User.full_name)
+        .outerjoin(User, User.id == Offering.professor_id)
+        .order_by(Offering.code.asc())
+        .all()
+    )
+    choices = []
+    for oid, code, desc, owner_id, owner_name in rows:
+        label = code
+        if desc:
+            label += f" — {desc}"
+        if owner_id and (target_user_id is None or owner_id != target_user_id):
+            label += f" (atual: {owner_name})"
+        choices.append((oid, label))
+    return choices
+
+
+
+# routes.py (perto dos outros helpers)
+def offering_choices_for_user(target_user_id: int | None = None):
+    rows = (
+        Offering.query
+        .outerjoin(User, User.id == Offering.professor_id)
+        .order_by(Offering.code.asc())
+        .all()
+    )
+    choices = []
+    for off in rows:
+        owner = off.professor.full_name if off.professor else None
+        label = f"{off.code}"
+        if off.description:
+            label += f" — {off.description}"
+        if owner and (target_user_id is None or off.professor_id != target_user_id):
+            label += f" (atual: {owner})"
+        choices.append((off.id, label))
+    return choices
+
 def campus_choices():
     return [(c.id, c.name) for c in Campus.query.order_by(Campus.name.asc()).all()]
 
@@ -553,17 +593,16 @@ def users_list():
 @role_required("admin")
 def users_new():
     form = UserForm()
+    form.offerings.choices = offering_choices_for_user()
+
     if form.validate_on_submit():
+        # e-mail único
         if User.query.filter_by(email=form.email.data.strip().lower()).first():
             flash("Já existe um usuário com este e-mail.", "warning")
             return render_template("admin/user_form.html", form=form, is_new=True)
 
-        # Normaliza role vindo do form
-        raw_role = form.role.data
-        try:
-            role_value = Role(raw_role)
-        except Exception:
-            role_value = raw_role  # coluna string
+        # normaliza role (ajuste para Enum(Role) se necessário)
+        role_value = (form.role.data or "").strip().lower()
 
         user = User(
             full_name=form.full_name.data.strip(),
@@ -571,20 +610,51 @@ def users_new():
             role=role_value,
             is_active=bool(form.is_active.data),
         )
-
         if form.password.data:
-            # usa método do model se existir, senão bcrypt
             if hasattr(user, "set_password"):
                 user.set_password(form.password.data)
             else:
                 user.password_hash = bcrypt.generate_password_hash(form.password.data).decode()
 
         db.session.add(user)
+        db.session.flush()   # pega user.id
+
+        selected_ids = set(form.offerings.data or [])
+        reassign = request.form.get("reassign_offers") == "1"
+
+        # Se perfil = professor, processa ofertas
+        if role_value == "professor" and selected_ids:
+            # conflitos: ofertas já têm outro responsável
+            conflict_rows = (
+                db.session.query(Offering.id, Offering.code, User.full_name)
+                .join(User, User.id == Offering.professor_id)
+                .filter(Offering.id.in_(selected_ids), Offering.professor_id != user.id)
+                .all()
+            )
+            if conflict_rows and not reassign:
+                itens = [f"{code} (atual: {owner})" for oid, code, owner in conflict_rows]
+                flash(
+                    "Algumas ofertas já possuem responsável e não foram atribuídas:<br>"
+                    + "<br>".join(itens)
+                    + "<br><small>Marque “Reatribuir ofertas que já têm responsável” para prosseguir.</small>",
+                    "warning"
+                )
+                # mantém o user criado? Melhor não — desfaz e reexibe form.
+                db.session.rollback()
+                form.offerings.choices = offering_choices_for_user()  # recarrega rótulos
+                return render_template("admin/user_form.html", form=form, is_new=True), 409
+
+            # reatribui (ou atribui) todas as selecionadas para o novo usuário
+            (Offering.query
+                .filter(Offering.id.in_(list(selected_ids)))
+                .update({Offering.professor_id: user.id}, synchronize_session=False))
+
         db.session.commit()
         flash("Usuário criado com sucesso.", "success")
         return redirect(url_for("admin.users_list"))
 
     return render_template("admin/user_form.html", form=form, is_new=True)
+
 
 @admin_bp.route("/users/<int:user_id>/edit", methods=["GET", "POST"])
 @login_required
@@ -592,17 +662,20 @@ def users_new():
 def users_edit(user_id):
     user = User.query.get_or_404(user_id)
     form = UserForm(obj=user)
+    form.offerings.choices = offering_choices_for_user(user.id)
+
+    # Pré-seleciona ofertas atuais
+    if request.method == "GET":
+        current_off_ids = [o.id for o in Offering.query.filter_by(professor_id=user.id).all()]
+        form.offerings.data = current_off_ids
 
     if form.validate_on_submit():
         user.full_name = form.full_name.data.strip()
         user.email = form.email.data.strip().lower()
         user.is_active = bool(form.is_active.data)
 
-        raw_role = form.role.data
-        try:
-            user.role = Role(raw_role)
-        except Exception:
-            user.role = raw_role
+        raw_role = (form.role.data or "").strip().lower()
+        user.role = raw_role  # ajuste se usar Enum(Role)
 
         if form.password.data:
             if hasattr(user, "set_password"):
@@ -610,17 +683,76 @@ def users_edit(user_id):
             else:
                 user.password_hash = bcrypt.generate_password_hash(form.password.data).decode()
 
-        db.session.commit()
-        flash("Usuário atualizado com sucesso.", "success")
-        return redirect(url_for("admin.users_list"))
+        selected_ids = set(form.offerings.data or [])
+        reassign = request.form.get("reassign_offers") == "1"
 
-    if request.method == "GET":
-        form.role.data = (
-            getattr(user, "role_value", None)
-            or (user.role.name if hasattr(user.role, "name") else user.role)
+        # Ofertas atualmente sob este usuário
+        existing_ids = set(
+            oid for (oid,) in db.session.query(Offering.id)
+            .filter(Offering.professor_id == user.id).all()
         )
 
+        # Se deixou de ser professor, desvincula tudo
+        if raw_role != "professor":
+            if existing_ids:
+                (Offering.query
+                    .filter(Offering.id.in_(list(existing_ids)))
+                    .update({Offering.professor_id: None}, synchronize_session=False))
+            selected_ids = set()  # ignora seleções
+        else:
+            # Conflitos: selecionadas que já pertencem a outro professor
+            if selected_ids:
+                conflict_rows = (
+                    db.session.query(Offering.id, Offering.code, User.full_name, Offering.professor_id)
+                    .join(User, User.id == Offering.professor_id)
+                    .filter(Offering.id.in_(selected_ids),
+                            Offering.professor_id.isnot(None),
+                            Offering.professor_id != user.id)
+                    .all()
+                )
+            else:
+                conflict_rows = []
+
+            if conflict_rows and not reassign:
+                itens = [f"{code} (atual: {owner})" for oid, code, owner, _ in conflict_rows]
+                flash(
+                    "Algumas ofertas já possuem responsável e não foram atribuídas:<br>"
+                    + "<br>".join(itens)
+                    + "<br><small>Marque “Reatribuir ofertas que já têm responsável” para prosseguir.</small>",
+                    "warning"
+                )
+                # re-renderiza mantendo escolhas do usuário
+                form.offerings.choices = offering_choices_for_user(user.id)
+                return render_template("admin/user_form.html", form=form, is_new=False), 409
+
+            # sincroniza conjuntos
+            to_add = selected_ids - existing_ids
+            to_remove = existing_ids - selected_ids
+
+            if to_add:
+                (Offering.query
+                    .filter(Offering.id.in_(list(to_add)))
+                    .update({Offering.professor_id: user.id}, synchronize_session=False))
+
+            if to_remove:
+                (Offering.query
+                    .filter(Offering.id.in_(list(to_remove)))
+                    .update({Offering.professor_id: None}, synchronize_session=False))
+
+        db.session.commit()
+
+        if raw_role != "professor":
+            flash("Usuário atualizado. Ofertas desvinculadas (perfil não é Professor).", "success")
+        else:
+            if request.form.get("reassign_offers") == "1":
+                flash("Usuário e ofertas atualizados (reatribuição aplicada).", "success")
+            else:
+                flash("Usuário e ofertas atualizados.", "success")
+
+        return redirect(url_for("admin.users_list"))
+
     return render_template("admin/user_form.html", form=form, is_new=False)
+
 
 @admin_bp.route("/users/<int:user_id>/delete", methods=["POST"])
 @login_required

@@ -13,8 +13,8 @@
       {{ ui.btn("Voltar", href=url_for('admin.users_list'), variant='secondary', icon='fa-solid fa-arrow-left mr-1') }}
     </div>
   </div>
-  <form method="post" novalidate
-        class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-5">
+
+  <form method="post" novalidate class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-5">
     {{ form.csrf_token }}
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -23,8 +23,8 @@
           {{ form.full_name.label }}
         </label>
         {{ form.full_name(
-            class_="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500",
-            placeholder="Nome completo"
+          class_="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500",
+          placeholder="Nome completo"
         ) }}
         {% for e in form.full_name.errors %}
           <div class="text-rose-600 text-sm mt-1">{{ e }}</div>
@@ -36,8 +36,8 @@
           {{ form.email.label }}
         </label>
         {{ form.email(
-            class_="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500",
-            placeholder="email@exemplo.com"
+          class_="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500",
+          placeholder="email@exemplo.com"
         ) }}
         {% for e in form.email.errors %}
           <div class="text-rose-600 text-sm mt-1">{{ e }}</div>
@@ -51,7 +51,7 @@
           {{ form.role.label }}
         </label>
         {{ form.role(
-            class_="w-full rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          class_="w-full rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
         ) }}
         {% for e in form.role.errors %}
           <div class="text-rose-600 text-sm mt-1">{{ e }}</div>
@@ -64,6 +64,51 @@
       </div>
     </div>
 
+    {# =================== Ofertas (responsável) =================== #}
+    {% set is_prof = (form.role.data or '')|lower == 'professor' %}
+    <fieldset id="offers-section" class="border border-slate-200 rounded-lg p-4 {{ '' if is_prof else 'hidden' }}">
+      <legend class="text-sm text-slate-600 px-1">Ofertas (responsável)</legend>
+      <p class="text-sm text-slate-500 mb-2">
+        Selecione as ofertas pelas quais este usuário será responsável.
+        Itens marcados serão atribuídos a este usuário; itens desmarcados serão desvinculados.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Buscar oferta</label>
+          <input id="offerSearch" type="text"
+                 class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                 placeholder="Filtrar por código/descrição">
+        </div>
+        <div class="flex items-end justify-between">
+          <div id="offerCount" class="text-sm text-slate-500">Selecionadas: 0</div>
+          <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" name="reassign_offers" value="1"
+                   class="h-4 w-4 text-indigo-600 rounded border-slate-300">
+            Reatribuir ofertas que já têm responsável
+          </label>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <label class="block text-xs text-slate-500 mb-1" for="{{ form.offerings.id }}">Lista de ofertas</label>
+        <select name="{{ form.offerings.name }}" id="{{ form.offerings.id }}" multiple size="10"
+                class="w-full rounded-lg border border-slate-300 px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+          {% for oid, label in form.offerings.choices %}
+            <option value="{{ oid }}" {% if form.offerings.data and oid in form.offerings.data %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+        {% for e in form.offerings.errors %}
+          <div class="text-rose-600 text-sm mt-1">{{ e }}</div>
+        {% endfor %}
+        <p class="text-xs text-slate-500 mt-2">
+          Dica: segure <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> para selecionar múltiplas. Use a busca acima para filtrar.
+        </p>
+      </div>
+    </fieldset>
+
     <fieldset class="border border-slate-200 rounded-lg p-4">
       <legend class="text-sm text-slate-600 px-1">Senha</legend>
       <p class="text-sm text-slate-500 mb-2">
@@ -72,9 +117,9 @@
 
       <div class="flex items-center gap-2">
         {{ form.password(
-            id="pwd",
-            class_="flex-1 rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500",
-            autocomplete="new-password"
+          id="pwd",
+          class_="flex-1 rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500",
+          autocomplete="new-password"
         ) }}
         <button type="button"
                 class="px-3 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50"
@@ -88,30 +133,66 @@
     </fieldset>
 
     <div class="pt-4 flex items-center gap-3">
-  <button
-    type="submit"
-    name="{{ form.submit.name }}"
-    value="1"
-    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg
-           bg-cyan-500 text-white text-sm font-semibold shadow-sm
-           hover:bg-cyan-300 focus:outline-none focus:ring-2
-           focus:ring-indigo-400 focus:ring-offset-2 active:translate-y-px
-           transition"
-    >
-    <i class="fa-solid fa-floppy-disk"></i> Salvar
-  </button>
+      <button
+        type="submit"
+        name="{{ form.submit.name if form.submit is defined else 'submit' }}"
+        value="1"
+        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg
+               bg-cyan-500 text-white text-sm font-semibold shadow-sm
+               hover:bg-cyan-400 focus:outline-none focus:ring-2
+               focus:ring-indigo-400 focus:ring-offset-2 active:translate-y-px
+               transition">
+        <i class="fa-solid fa-floppy-disk"></i> Salvar
+      </button>
 
-    <a
-      href="{{ url_for('admin.users_list') }}"
-      class="inline-flex items-center gap-2 px-4 py-2 rounded-lg
-            border border-red-300 bg-red-300 text-sm font-medium text-slate-700
-            hover:bg-red-50 hover:border-red-50 focus:outline-none
-            focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
-    >
-      Cancelar
-    </a>
+      <a href="{{ url_for('admin.users_list') }}"
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg
+                border border-slate-300 bg-white text-sm font-medium text-slate-700
+                hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2">
+        Cancelar
+      </a>
     </div>
   </form>
 </div>
 
+{# ======== JS: alternar seção de ofertas + busca/contagem ======== #}
+<script>
+(function() {
+  const roleSel = document.getElementById('{{ form.role.id }}');
+  const offersBox = document.getElementById('offers-section');
+  const selectEl = document.getElementById('{{ form.offerings.id }}');
+  const searchEl = document.getElementById('offerSearch');
+  const countEl = document.getElementById('offerCount');
+
+  function updateVisibility() {
+    const isProf = (roleSel.value || '').toLowerCase() === 'professor';
+    offersBox.classList.toggle('hidden', !isProf);
+    // Se quiser desabilitar quando não for professor:
+    selectEl.disabled = !isProf;
+    searchEl.disabled = !isProf;
+  }
+
+  function updateCount() {
+    const n = [...selectEl.options].filter(o => o.selected).length;
+    countEl.textContent = 'Selecionadas: ' + n;
+  }
+
+  function filterOptions() {
+    const q = (searchEl.value || '').toLowerCase();
+    [...selectEl.options].forEach(opt => {
+      const txt = (opt.text || '').toLowerCase();
+      opt.hidden = q && !txt.includes(q);
+    });
+  }
+
+  if (roleSel && offersBox && selectEl) {
+    roleSel.addEventListener('change', updateVisibility);
+    selectEl.addEventListener('change', updateCount);
+    searchEl.addEventListener('input', filterOptions);
+    // init
+    updateVisibility();
+    updateCount();
+  }
+})();
+</script>
 {% endblock %}

@@ -8,6 +8,7 @@ from wtforms.validators import Optional, Length
 from wtforms import StringField, TextAreaField, SelectField, SubmitField
 from wtforms import BooleanField, DecimalField, SubmitField
 from wtforms.validators import Optional, NumberRange
+from wtforms import StringField, SelectField, BooleanField, PasswordField, SelectMultipleField
 
 from wtforms import StringField, SelectField, BooleanField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, Optional, Length
@@ -23,6 +24,7 @@ class UserForm(FlaskForm):
     )
     is_active = BooleanField("Ativo", default=True)
     password = PasswordField("Definir / Trocar senha", validators=[Optional(), Length(min=6, max=128)])
+    offerings = SelectMultipleField("Ofertas (responsável)", coerce=int, choices=[])
     submit = SubmitField("Salvar")
 
 class StudentForm(FlaskForm):
