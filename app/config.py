@@ -43,3 +43,17 @@ class Config:
 
     # Log SQL (opcional para debug): defina SQLALCHEMY_ECHO=1 no .env
     SQLALCHEMY_ECHO = os.getenv("SQLALCHEMY_ECHO") == "1"
+
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,              # testa a conexão e reabre se caiu
+        "pool_recycle": int(os.getenv("DB_POOL_RECYCLE", "1800")),  # recicla conexões a cada 30 min
+        "pool_size": int(os.getenv("DB_POOL_SIZE", "5")),           # ajuste conforme carga
+        "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "10")),    # bursts
+        "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),    # seg. pra esperar vaga no pool
+        "connect_args": {
+            "connect_timeout": int(os.getenv("DB_CONNECT_TIMEOUT", "5")),
+            # PyMySQL aceita:
+            "read_timeout": int(os.getenv("DB_READ_TIMEOUT", "30")),
+            "write_timeout": int(os.getenv("DB_WRITE_TIMEOUT", "30")),
+        },
+    }

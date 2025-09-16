@@ -1,0 +1,7 @@
+<div class="container py-4">
+  <div class="alert alert-danger border-2">
+    <h5 class="mb-2">Erro interno</h5>
+    <p>Houve um problema ao processar sua solicitação. Tente novamente mais tarde.</p>
+    {% if err_id %}<p class="small text-muted mb-0">ID do erro: <code>{{ err_id }}</code></p>{% endif %}
+  </div>
+</div>

@@ -11,6 +11,43 @@ import os
 
 from app.reports import reports_bp
 
+# __init__.py
+import logging, sys, uuid
+from werkzeug.exceptions import HTTPException
+from flask import render_template
+from .extensions import db
+
+def setup_logging(app):
+    # log no stdout (aparece no `docker compose logs -f web`)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.INFO)
+    handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
+    app.logger.addHandler(handler)
+    app.logger.setLevel(logging.INFO)
+
+    # (opcional) ver eventos do pool do SQLAlchemy quando necessário
+    if app.config.get("SQLALCHEMY_ECHO"):
+        logging.getLogger("sqlalchemy.pool").setLevel(logging.INFO)
+        logging.getLogger("sqlalchemy.pool").addHandler(handler)
+
+def register_error_handlers(app):
+    @app.teardown_request
+    def _teardown_request(exc):
+        # se alguma view/executor levantou exceção, limpamos a sessão
+        if exc:
+            db.session.rollback()
+        # remove SEMPRE a sessão ao fim da request
+        db.session.remove()
+
+    @app.errorhandler(Exception)
+    def _handle_any_exception(e):
+        if isinstance(e, HTTPException):
+            return e  # deixa 4xx/405/404 seguirem
+        err_id = uuid.uuid4().hex[:8]
+        app.logger.exception(f"[{err_id}] Unhandled exception")
+        db.session.rollback()
+        return render_template("errors/500.html", err_id=err_id), 500
+
 def create_app() -> Flask:
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(Config)
@@ -31,6 +68,8 @@ def create_app() -> Flask:
     login_manager.init_app(app)
     csrf.init_app(app)
     bcrypt.init_app(app)
+    setup_logging(app)
+    register_error_handlers(app)
 
     @login_manager.user_loader
     def load_user(user_id):
