@@ -17,4 +17,4 @@ COPY . .
 ENV APP_PORT=8000
 EXPOSE 8000
 #CMD ["tini","-g","--","gunicorn","-w","1","-k","gthread","--threads","3", "--keep-alive","5", "-b","0.0.0.0:8000","wsgi:app"]
-CMD ["gunicorn","-w","1","-k","gthread","--threads","3","--keep-alive","5","--timeout","30", "--graceful-timeout","30","--max-requests","500","--max-requests-jitter","50","--log-level","warning","-b","0.0.0.0:8000","wsgi:app"]
+CMD ["gunicorn","-w","1","-k","gthread","--threads","4","--keep-alive","5","--timeout","30", "--graceful-timeout","30","--max-requests","500","--max-requests-jitter","50","--log-level","warning","-b","0.0.0.0:8000","wsgi:app"]
