@@ -14,13 +14,7 @@
 
     <form method="post" novalidate class="p-6 space-y-6">
       {{ form.hidden_tag() }}
-      <div class="form-check my-2">
-        <input class="form-check-input" type="checkbox" value="1" id="reassign" name="reassign">
-        <label class="form-check-label" for="reassign">
-          Mover alunos que já pertencem a outro grupo para este grupo
-        </label>
-      </div>
-
+     
       {# --- Título do projeto --- #}
       <div>
         <label for="title" class="block text-sm font-medium text-slate-700 mb-1">
@@ -73,7 +67,12 @@
           </ul>
         {% endif %}
       </div>
-
+      <div class="form-check my-2">
+        <input class="form-check-input" type="checkbox" value="1" id="reassign" name="reassign">
+        <label class="form-check-label" for="reassign">
+          Mover alunos que já pertencem a outro grupo para este grupo
+        </label>
+      </div>
       <div class="flex items-center justify-end gap-3">
         <a href="{{ url_for('admin.groups_list') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50">
           <i class="fa-solid fa-xmark"></i>
