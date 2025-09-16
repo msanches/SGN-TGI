@@ -379,12 +379,7 @@ def groups_edit(group_id):
         if conflicts and not reassign:
             # Só informa o problema e retorna 409 sem alterar nada
             itens = [f"{rgm} - {name} (já no grupo #{gid}: '{gtitle}')" for sid, rgm, name, gid, gtitle in conflicts]
-            flash(
-                "Alguns alunos já pertencem a outro grupo e não foram adicionados:<br>" +
-                "<br>".join(itens) +
-                "<br><small>Dica: confirme a reatribuição marcando a opção 'Mover alunos de outros grupos' e salve novamente.</small>",
-                "warning"
-            )
+            flash(f"Alguns alunos já pertencem a outro grupo e não foram adicionados:{'\n'.join(itens)}\nDica: confirme a reatribuição marcando a opção")
             # Recarrega a tela com membros atuais
             members = [gs.student for gs in group.members]
             current_rgms = [s.rgm for s in members]
