@@ -349,3 +349,94 @@ def groups_export(fmt: str):
     resp.headers["Content-Disposition"] = f'attachment; filename="{fname}"'
     return resp
 
+
+@reports_bp.get("/export_alunos_sg")
+@login_required
+@role_required("admin", "professor")
+def export_alunos_sg():
+    """
+    Exporta alunos SEM grupo.
+      - Admin: todos os alunos sem grupo
+      - Professor: apenas alunos sem grupo de suas ofertas
+    Parâmetros:
+      - fmt: csv | xlsx (query string)
+    """
+    fmt = (request.args.get("fmt") or "csv").lower()
+
+    # Base: alunos sem vínculo na group_students
+    base = (
+        Student.query
+        .options(joinedload(Student.campus), joinedload(Student.offering))
+        .outerjoin(GroupStudent, GroupStudent.student_id == Student.id)
+        .filter(GroupStudent.student_id.is_(None))
+    )
+
+    # Filtro por professor (apenas suas ofertas)
+    role_val = (getattr(current_user, "role_value", None)
+                or (current_user.role.value if hasattr(current_user.role, "value") else current_user.role)
+                or "").lower()
+    if role_val == "professor":
+        offs = _offerings_for_current_prof()
+        off_ids = [o.id for o in offs]
+        if off_ids:
+            base = base.filter(Student.offering_id.in_(off_ids))
+        else:
+            # professor sem ofertas -> resultado vazio
+            students = []
+            off_ids = []
+    students = base.order_by(Student.name.asc()).all()
+
+    # Linhas
+    headers = ["Nome", "RGM", "Oferta", "Campus"]
+    rows = [
+        [
+            s.name or "-",
+            s.rgm or "-",
+            (s.offering.code if getattr(s, "offering", None) else "-"),
+            (s.campus.name if getattr(s, "campus", None) else "-"),
+        ]
+        for s in students
+    ]
+
+    # XLSX
+    if fmt == "xlsx":
+        if openpyxl is None:
+            flash("Para exportar Excel, instale 'openpyxl' (pip install openpyxl).", "warning")
+            return redirect(url_for("admin.dashboard") if role_val == "admin" else url_for("professors.offerings_list"))
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Sem Grupo"
+        ws.append(headers)
+        for c in ws[1]:
+            c.font = Font(bold=True)
+        for r in rows:
+            ws.append(r)
+        # larguras
+        from openpyxl.utils import get_column_letter
+        for col_idx in range(1, len(headers) + 1):
+            ws.column_dimensions[get_column_letter(col_idx)].width = 28 if col_idx in (1, 4) else 16
+
+        bio = BytesIO()
+        wb.save(bio)
+        bio.seek(0)
+        fname = f"alunos_sem_grupo_{_stamp()}.xlsx"
+        return send_file(
+            bio,
+            as_attachment=True,
+            download_name=fname,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
+    # CSV (com BOM para Excel)
+    si = StringIO(newline="")
+    w = csv.writer(si)
+    w.writerow(headers)
+    for r in rows:
+        w.writerow(r)
+    payload = si.getvalue().encode("utf-8-sig")
+    fname = f"alunos_sem_grupo_{_stamp()}.csv"
+    resp = Response(payload, mimetype="text/csv; charset=utf-8")
+    resp.headers["Content-Disposition"] = f'attachment; filename="{fname}"'
+    return resp
+
