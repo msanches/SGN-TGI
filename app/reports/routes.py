@@ -246,18 +246,16 @@ def _instrument_key(inst) -> str | None:
 @role_required("admin", "professor")
 def groups_export(fmt: str):
     """
-    Exporta grupos:
-      - admin: todos os grupos
-      - professor: apenas grupos que ele orienta
-    fmt: 'csv' | 'xlsx'
-    Colunas: #grupo, Título, Orientador, Membros (Nome/RGM)
+    Exporta grupos em colunas achatadas:
+      # Grupo, Título, Orientador, nome_1, rgm_1, nome_2, rgm_2, ...
+    - admin: todos os grupos
+    - professor: apenas os grupos que orienta
+    Parâmetros:
+      - fmt: 'csv' | 'xlsx'
+      - ?max=N  -> força o número de pares nome/rgm
     """
-    # 1) Carrega grupos + orientador (scalar, pode usar joinedload)
-    base = (
-        Group.query
-        .options(joinedload(Group.orientador))  # OK (não é dynamic)
-        .order_by(Group.id.asc())
-    )
+    # 1) Carrega grupos (filtra por professor se necessário)
+    base = Group.query.options(joinedload(Group.orientador)).order_by(Group.id.asc())
 
     role_val = getattr(current_user, "role_value", None) or (
         current_user.role.value if hasattr(current_user.role, "value") else current_user.role
@@ -269,36 +267,47 @@ def groups_export(fmt: str):
     groups = base.all()
     group_ids = [g.id for g in groups]
 
-    # 2) Pré-carrega os vínculos GroupStudent + Student e monta o mapa
+    # 2) Pré-carrega membros
     members_by_group: dict[int, list[Student]] = defaultdict(list)
     if group_ids:
         links = (
             GroupStudent.query
             .filter(GroupStudent.group_id.in_(group_ids))
-            .options(joinedload(GroupStudent.student))  # OK aqui
+            .options(joinedload(GroupStudent.student))
             .all()
         )
         for gs in links:
             if gs.student:
                 members_by_group[gs.group_id].append(gs.student)
 
-    # 3) CSV
-    if fmt.lower() == "csv":
-        si = StringIO(newline="")
-        w = csv.writer(si)
-        w.writerow(["# Grupo", "Título do trabalho", "Orientador", "Membros (Nome/RGM)"])
-        for g in groups:
-            orient = g.orientador.full_name if getattr(g, "orientador", None) else "-"
-            students = members_by_group.get(g.id, [])
-            members_str = "; ".join(f"{s.name} ({s.rgm})" for s in students) or "-"
-            w.writerow([g.id, (g.title or "-"), orient, members_str])
+    # 3) Decide quantos pares nome/rgm exportar
+    max_param = request.args.get("max", type=int)
+    if max_param and max_param > 0:
+        max_members = max_param
+    else:
+        # calcula automaticamente com piso mínimo de 3
+        max_members = max([len(members_by_group.get(g.id, [])) for g in groups] + [3])
 
-        fname = f"grupos_{_stamp()}.csv"
-        resp = Response(si.getvalue(), mimetype="text/csv; charset=utf-8")
-        resp.headers["Content-Disposition"] = f'attachment; filename="{fname}"'
-        return resp
+    # 4) Monta header achatado
+    header = ["# Grupo", "Título do trabalho", "Orientador"]
+    for i in range(1, max_members + 1):
+        header += [f"nome_{i}", f"rgm_{i}"]
 
-    # 4) XLSX
+    # 5) Linhas
+    out_rows = []
+    for g in groups:
+        orient = g.orientador.full_name if getattr(g, "orientador", None) else "-"
+        students = sorted(members_by_group.get(g.id, []), key=lambda s: (s.name or "").upper())
+        # corta/ completa
+        pairs = [(s.name or "", s.rgm or "") for s in students[:max_members]]
+        while len(pairs) < max_members:
+            pairs.append(("", ""))
+        flat = []
+        for n, r in pairs:
+            flat += [n, r]
+        out_rows.append([g.id, (g.title or "-"), orient, *flat])
+
+    # 6) XLSX
     if fmt.lower() == "xlsx":
         if openpyxl is None:
             flash("Para exportar Excel, instale 'openpyxl' (pip install openpyxl).", "warning")
@@ -307,31 +316,17 @@ def groups_export(fmt: str):
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Grupos"
-
-        headers = ["# Grupo", "Título do trabalho", "Orientador", "Membros (Nome/RGM)"]
-        ws.append(headers)
+        ws.append(header)
         for c in ws[1]:
             c.font = Font(bold=True)
 
-        for g in groups:
-            orient = g.orientador.full_name if getattr(g, "orientador", None) else "-"
-            students = members_by_group.get(g.id, [])
-            members_str = "\n".join(f"{s.name} ({s.rgm})" for s in students) or "-"
-            ws.append([g.id, (g.title or "-"), orient, members_str])
+        for row in out_rows:
+            ws.append(row)
 
-        # Larguras & wrap
-        col_widths = {}
-        for row in ws.iter_rows(min_row=1, max_row=ws.max_row, max_col=4):
-            for cell in row:
-                val = str(cell.value) if cell.value is not None else ""
-                col_widths[cell.column] = max(col_widths.get(cell.column, 0), min(len(val), 60))
-
-        for col_idx, w in col_widths.items():
-            ws.column_dimensions[get_column_letter(col_idx)].width = max(12, min(w + 2, 60))
-
-        for r in range(2, ws.max_row + 1):
-            ws.cell(row=r, column=2).alignment = Alignment(wrap_text=True)
-            ws.cell(row=r, column=4).alignment = Alignment(wrap_text=True)
+        # larguras agradáveis
+        from openpyxl.utils import get_column_letter
+        for col_idx in range(1, len(header) + 1):
+            ws.column_dimensions[get_column_letter(col_idx)].width = 22
 
         bio = BytesIO()
         wb.save(bio)
@@ -344,5 +339,13 @@ def groups_export(fmt: str):
             mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
 
-    flash("Formato inválido. Use csv ou xlsx.", "warning")
-    return redirect(url_for("admin.groups_list"))
+    # 7) CSV (UTF-8 BOM; separador padrão “,” — mude para ';' se preferir)
+    si = StringIO(newline="")
+    writer = csv.writer(si)  # csv.writer(si, delimiter=';') se quiser ponto-e-vírgula
+    writer.writerow(header)
+    writer.writerows(out_rows)
+    fname = f"grupos_{_stamp()}.csv"
+    resp = Response(si.getvalue().encode("utf-8-sig"), mimetype="text/csv; charset=utf-8")
+    resp.headers["Content-Disposition"] = f'attachment; filename="{fname}"'
+    return resp
+
