@@ -36,11 +36,16 @@ def campus_choices():
     return [(c.id, c.name) for c in Campus.query.order_by(Campus.name.asc()).all()]
 
 def professor_choices(include_placeholder=True):
-    # Suporta tanto Enum quanto string na coluna 'role'
-    q = (User.query
-         .filter(or_(User.role == Role.professor, User.role == "professor"))
-         .filter(User.is_active.is_(True))
-         .order_by(User.full_name.asc()))
+    q = (
+        User.query
+        .filter(User.is_active.is_(True))
+        .filter(or_(
+            User.role == Role.professor,               # Enum(Role)
+            func.lower(User.role) == "professor",      # string
+            func.lower(User.role) == "role.professor"  # legado
+        ))
+        .order_by(User.full_name.asc())
+    )
     rows = q.all()
     choices = [(-1, "— Sem orientador —")] if include_placeholder else []
     choices += [(u.id, u.full_name or u.email) for u in rows]
@@ -503,15 +508,27 @@ def users_list():
         like = f"%{q}%"
         query = query.filter(or_(User.full_name.ilike(like), User.email.ilike(like)))
 
-    if role_param in {"admin", "professor", "guest"}:
-        # Tenta filtrar por Enum(Role); se não der, por string (role_value/role)
+    # 🔧 filtro robusto por perfil
+    aliases = {
+        "admin": "admin",
+        "professor": "professor",
+        "convidado": "convidado",
+        "guest": "convidado",   # trata sinônimo
+    }
+    if role_param in aliases:
+        target = aliases[role_param]
+
+        conds = [
+            func.lower(User.role) == target,                 # coluna string normalizada
+            func.lower(User.role) == f"role.{target}",       # dado legado "Role.professor"
+        ]
+        # se a coluna for Enum(Role), este comparador funciona
         try:
-            query = query.filter(User.role == Role(role_param))
+            conds.append(User.role == Role(target))
         except Exception:
-            if hasattr(User, "role_value"):
-                query = query.filter(User.role_value == role_param)
-            else:
-                query = query.filter(User.role == role_param)
+            pass
+
+        query = query.filter(or_(*conds))
 
     users = query.order_by(User.full_name.asc()).all()
 
@@ -529,6 +546,7 @@ def users_list():
         role=role_param,
         group_counts=group_counts,
     )
+
 
 @admin_bp.route("/users/new", methods=["GET", "POST"])
 @login_required
